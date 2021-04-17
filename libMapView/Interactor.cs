@@ -14,10 +14,33 @@ namespace libMapView
         ViewParam viewParam;
         //IOutputBoundary presenter;
         Presenter presenter;
-        CmnObjHandle selectedHdl;
+
+        //動作設定
+        public int ClickSearchRange = 1; //無制限ならint.MaxValue
+        public int tileLoadDistanceX = 3;
+        public int tileLoadDistanceY = 2;
+        public int tileReleaseDistanceX = 15;
+        public int tileReleaseDistanceY = 10;
+        public int tileDrawDistanceX = 2;
+        public int tileDrawDistanceY = 1;
+        public bool isAllTileReadMode = false;
+        public bool isAllTileLoaded = false;
+
+        //表示コンテンツ
+        public ushort drawMapObjType = 0xffff;
+        public bool isTileBorderDisp = true; 
+
+        //制御用
 
         bool drawEnable = false;
         bool isPaintNeeded = true;
+        UInt16 drawObjType = 0xffff;
+
+        byte currentTileLv;
+        uint currentTileId;
+        bool currentTileChanged = false;
+
+        /* 起動・設定・終了 ***********************************************/
 
         public Interactor(IViewApi outputClass)
         {
@@ -37,12 +60,6 @@ namespace libMapView
             RefreshDrawArea();
         }
 
-        public void Shutdown()
-        {
-            if(mapMgr != null)
-                mapMgr.Disconnect();
-        }
-
 
         public void SetDrawInterface(CmnDrawApi drawApi)
         {
@@ -50,44 +67,102 @@ namespace libMapView
 
         }
 
-        public void SetDrawAreaSize(int width, int height)
+        public void Shutdown()
         {
-            viewParam.width = width;
-            viewParam.height = height;
+            if(mapMgr != null)
+                mapMgr.Disconnect();
         }
 
-        public void SetViewCenter(LatLon latlon)
-        {
 
-        }
+        /* データ管理 ***********************************************/
 
         private void RefleshMapCache()
         {
-            //座標周辺の地図をロード
-            uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
-            List<uint> tileList = mapMgr.tileApi.CalcTileIdAround(centerTileId, 1, 1);
-
-            foreach (uint tileId in tileList)
+            if (isAllTileReadMode)
             {
-                mapMgr.LoadTile(tileId);
+                if (!isAllTileLoaded)
+                {
+                    //全地図データロード
+                    List<uint> tileList = mapMgr.GetMapTileIdList();
+
+                    foreach (uint tileId in tileList)
+                    {
+                        mapMgr.LoadTile(tileId);
+                    }
+
+                    isAllTileLoaded = true;
+                }
             }
+            else
+            {
+                isAllTileLoaded = false;
 
-            //遠くの地図をアンロード
+                if (currentTileChanged)
+                {
+                    //座標周辺の地図をロード
+                    uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
+                    List<uint> tileIdList = mapMgr.tileApi.CalcTileIdAround(centerTileId, tileLoadDistanceX, tileLoadDistanceY);
 
+                    foreach (uint tileId in tileIdList)
+                    {
+                        mapMgr.LoadTile(tileId);
+                    }
+                    //遠くの地図をアンロード
+
+                    List<CmnTile> tileList = mapMgr.GetLoadedTileList();
+                    foreach (CmnTile tile in tileList)
+                    {
+                        TileXY offset = mapMgr.tileApi.CalcTileAbsOffset(centerTileId, tile.tileId);
+                        if (offset.x > tileReleaseDistanceX || offset.y > tileReleaseDistanceY)
+                            mapMgr.UnloadTile(tile.tileId);
+                    }
+
+                    currentTileChanged = false;
+                }
+            }
         }
+
+        /* 検索 ***********************************************/
+
+
+
+        public void SearchObject(LatLon baseLatLon)
+        {
+            if (!drawEnable)
+                return;
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, ClickSearchRange);
+
+            if (selectedHdl == null)
+            {
+                presenter.SetRelatedObj(null);
+                return;
+            }
+            presenter.SetSelectedObj(selectedHdl.mapObj);
+
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl);
+            //List<CmnObjRef> refList = selectedHdl.mapObj.GetObjRefList(selectedHdl.tile);
+            presenter.SetRelatedObj(relatedHdlList);
+            presenter.ShowAttribute(selectedHdl.mapObj);
+
+            //RefreshDrawArea();
+        }
+
+
+        /* 描画 ***********************************************/
 
         public void Paint(Graphics g)
         {
             if (!drawEnable || !isPaintNeeded)
                 return;
 
+            //タイル読み込み・解放
             RefleshMapCache();
             
             //描画対象タイルを特定
-            List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), 1, 1);
+            List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), tileDrawDistanceX, tileDrawDistanceY);
 
             //各タイルを描画
-            presenter.DrawTile(g, drawTileList, viewParam, 0xFFFF);
+            presenter.DrawTile(g, drawTileList, viewParam, drawObjType);
 
             isPaintNeeded = false;
             //presenter.drawMapLink(g, drawTileList, viewParam);
@@ -99,7 +174,13 @@ namespace libMapView
             presenter.RefreshDrawArea();
         }
 
-        public LatLon GetLatLon(int x, int y)
+        public void SetSelectedLatLon(LatLon latlon)
+        {
+            presenter.selectedLatLon = latlon;
+            isPaintNeeded = true;
+        }
+
+        public LatLon GetLatLon(int x, int y) //描画エリアのXY→緯度経度
         {
             int offsetX = x - viewParam.width / 2;
             int offsetY = y - viewParam.height / 2;
@@ -108,19 +189,36 @@ namespace libMapView
 
         }
 
-        public LatLon GetLatLonOld(int offsetX, int offsetY)
+
+
+        /* 描画用パラメータ変更 ***********************************************/
+
+        public void SetDrawAreaSize(int width, int height)
         {
-            return viewParam.GetLatLon(offsetX, offsetY);
+            viewParam.width = width;
+            viewParam.height = height;
         }
 
+        public void SetViewCenter(LatLon latlon)
+        {
+            viewParam.SetViewCenter(latlon);
+            // UpdateCurrentTileId();
+            //RefreshDrawArea();
+
+            //if
+            currentTileChanged = true;
+        }
 
         public void MoveViewCenter(LatLon relLatLon)
         {
             viewParam.MoveViewCenter(relLatLon);
-            presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
+            //presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
             presenter.UpdateCenterLatLon(viewParam.viewCenter);
-            RefreshDrawArea();
+            // UpdateCurrentTileId();
+            // RefreshDrawArea();
 
+            //if
+            currentTileChanged = true;
         }
 
         public void MoveViewCenter(int x, int y)
@@ -128,7 +226,11 @@ namespace libMapView
             viewParam.MoveViewCenter(x, y);
             //presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
             presenter.UpdateCenterLatLon(viewParam.viewCenter);
-            RefreshDrawArea();
+            //UpdateCurrentTileId();
+            //RefreshDrawArea();
+
+            //if
+            currentTileChanged = true;
         }
 
         public void ChangeZoom(double delta, int x, int y)
@@ -149,37 +251,21 @@ namespace libMapView
         }
 
 
+        /* テキスト表示 ***********************************************/
 
-        public void SearchObject(LatLon baseLatLon)
+        private void UpdateCurrentTileId()
         {
-            if (!drawEnable)
-                return;
-            CmnObjHandle linkHdl = mapMgr.SearchObj(baseLatLon);
-
-            if (linkHdl != null)
+            uint newTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
+            if(currentTileId != newTileId)
             {
-                selectedHdl = linkHdl;
-                presenter.SetSelectedLink(linkHdl.mapObj);
-                presenter.ShowAttribute(linkHdl.mapObj);
+                currentTileId = newTileId;
+                currentTileChanged = true;
             }
-            RefreshDrawArea();
         }
 
-        //public void SetRouteOrigin()
-        //{
-        //    orginHdl = selectedHdl;
-        //}
 
-        //public void SetRouteDestination()
-        //{
-        //    destHdl = selectedHdl;
-        //    presenter.DispDest(destHdl);
-        //}
+        /* その他 ***********************************************/
 
-        //public int CalcRoute()
-        //{
-        //    return 0;
-        //}
 
         public void ShowAttribute()
         { }
@@ -199,7 +285,7 @@ namespace libMapView
         void UpdateCenterLatLon(LatLon latlon);
         void UpdateCenterTileId(uint tileId);
         void ShowAttribute(CmnObj mapLink);
-        void SetSelectedLink(CmnObj mapLink);
+        void SetSelectedObj(CmnObj mapLink);
 
         void SetDrawInterface(CmnDrawApi drawApi);
 

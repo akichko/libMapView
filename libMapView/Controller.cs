@@ -17,6 +17,8 @@ namespace libMapView
         public Controller(IViewApi outputClass)
         {
             interactor = new Interactor(outputClass);
+            interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
+            RefreshDrawArea();
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -34,6 +36,10 @@ namespace libMapView
             interactor.Shutdown();
         }
 
+        public void SetViewerMode()
+        {
+
+        }
 
 
         //描画パラメータ設定
@@ -47,6 +53,7 @@ namespace libMapView
         public void MoveViewCenter(int x, int y)
         {
             interactor.MoveViewCenter(x, y);
+            RefreshDrawArea();
         }
 
         public void ChangeZoom(int delta, int x, int y)
@@ -59,6 +66,7 @@ namespace libMapView
             {
                 interactor.ChangeZoom(0.5, x, y);
             }
+            RefreshDrawArea();
 
         }
 
@@ -76,7 +84,10 @@ namespace libMapView
             interactor.RefreshDrawArea();
         }
 
-
+        public void SetSelectedLatLon(LatLon latlon)
+        {
+            interactor.SetSelectedLatLon(latlon);
+        }
 
         //選択
 
@@ -94,6 +105,7 @@ namespace libMapView
         private void SearchObject(LatLon clickedLatLon)
         {
             interactor.SearchObject(clickedLatLon);
+            RefreshDrawArea();
         }
 
 

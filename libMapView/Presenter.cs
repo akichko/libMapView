@@ -17,6 +17,8 @@ namespace libMapView
 
         ViewParam viewParam;
 
+        public LatLon selectedLatLon;
+
         public Presenter(IViewApi mainForm)
         {
             //this.mainForm = (Form1)mainForm;
@@ -31,10 +33,10 @@ namespace libMapView
         }
 
 
-        public void SetViewParam(ViewParam viewParam)
-        {
-            this.viewParam = viewParam;
-        }
+        //public void SetViewParam(ViewParam viewParam)
+        //{
+        //    this.viewParam = viewParam;
+        //}
 
         public void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt16 objType )
         {
@@ -59,9 +61,15 @@ namespace libMapView
 
             foreach (CmnTile drawTile in tileList)
             {
+                //各オブジェクト描画
                 drawTile.DrawData(new CbGetObjFunc(CbDrawFunc));
-
+                //タイル枠描画
+                drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
             }
+
+            //座標点追加描画
+            drawApi.DrawPoint(g2, selectedLatLon, viewParam);
+
 
             viewAccess.UpdateImage(bitmap);
             
@@ -88,15 +96,20 @@ namespace libMapView
 
         }
 
-        public void SetSelectedLink(CmnObj mapLink)
+        public void SetSelectedObj(CmnObj mapLink)
         {
             drawApi.selectObj = mapLink;
 
         }
 
+        public void SetRelatedObj(List<CmnObjHdlRef> refObjList)
+        {
+            drawApi.refObjList = refObjList;
+        }
+
         public void UpdateCenterLatLon(LatLon latlon)
         {
-            viewAccess.DispCenterLatLon(latlon.lat, latlon.lon);
+            viewAccess.DispCenterLatLon(latlon);
         }
 
         public void UpdateCenterTileId(uint tileId)
@@ -111,13 +124,6 @@ namespace libMapView
     }
 
 
-    public class listView
-    {
-        Object Tag;
-        int group;
-        List<string[]> listItem = new List<string[]>();
-
-    }
 
     public interface IViewApi
     {
@@ -126,17 +132,17 @@ namespace libMapView
 
         void RefreshDrawArea();
         void DispCurrentTileId(uint tileId);
-        void DispListView(List<string[]> listItem);
+        void DispListView(List<AttrItemInfo> listItem);
 
-        void DispCenterLatLon(double lat, double lon);
-        ViewModel GetViewModel();
+        void DispCenterLatLon(LatLon latlon);
+        //ViewModel GetViewModel();
 
-        Image GetDrawAreaImage();
+        //Image GetDrawAreaImage();
 
         void UpdateImage(Image newImage);
 
         //Route
-        void DispDest(string destStr);
+        //void DispDest(string destStr);
     }
 
     public class ViewModel : INotifyPropertyChanged
@@ -164,7 +170,13 @@ namespace libMapView
 
     public abstract class CmnDrawApi
     {
-       public CmnObj selectObj = null;
+        public CmnObj selectObj = null;
+
+        public List<CmnObjHdlRef> refObjList = null;
+
+        public LatLon selectPoint;
+
+
         public abstract int DrawObj(Graphics g, ViewParam viewParam, CmnObj cmnObj);
 
         protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
@@ -177,7 +189,33 @@ namespace libMapView
 
         }
 
+        public void DrawPoint(Graphics g, LatLon latlon, ViewParam viewParam)
+        {
+            if (latlon == null)
+                return;
+            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
 
+            //色は暫定
+            float width = 5;
+            Pen pen = new Pen(Color.Blue);
+            g.FillEllipse(new SolidBrush(Color.Blue), pointF.X - width, pointF.Y - width, width*2, width*2);
+
+        }
+
+        public int DrawPolyline(Graphics g, ViewParam viewParam, LatLon[] geometry)
+        {
+            PointF[] pointF = new PointF[geometry.Length];
+
+            for (int i = 0; i < geometry.Length; i++)
+            {
+                pointF[i] = CalcPointInDrawArea(geometry[i], viewParam);
+            }
+
+            Pen pen = new Pen(Color.Black);
+            g.DrawLines(pen, pointF);
+            return 0;
+
+        }
     }
 
 

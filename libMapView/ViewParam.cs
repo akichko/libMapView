@@ -49,6 +49,19 @@ namespace libMapView
             return tmpLatLon;
         }
 
+        public void SetViewCenter(LatLon latlon)
+        {
+
+            //緯度経度更新
+            viewCenter.lon = latlon.lon;
+            viewCenter.lat = latlon.lat;
+
+            //その他パラメータ更新
+            //tileId = MapTool.CalcTileId(viewCenter);
+            CalcMPerLatLon();
+
+        }
+
         public void MoveViewCenter(LatLon relLatlon)
         {
 
