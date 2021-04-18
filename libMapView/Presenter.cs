@@ -196,9 +196,10 @@ namespace libMapView
             PointF pointF = CalcPointInDrawArea(latlon, viewParam);
 
             //色は暫定
-            float width = 5;
-            Pen pen = new Pen(Color.Blue);
-            g.FillEllipse(new SolidBrush(Color.Blue), pointF.X - width, pointF.Y - width, width*2, width*2);
+            float width = 6;
+            g.FillEllipse(new SolidBrush(Color.DodgerBlue), pointF.X - width, pointF.Y - width, width*2, width*2);
+            width = 3;
+            g.FillEllipse(new SolidBrush(Color.Yellow), pointF.X - width, pointF.Y - width, width * 2, width * 2);
 
         }
 

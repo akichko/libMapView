@@ -137,12 +137,12 @@ namespace libMapView
                 presenter.SetRelatedObj(null);
                 return;
             }
-            presenter.SetSelectedObj(selectedHdl.mapObj);
+            presenter.SetSelectedObj(selectedHdl.obj);
 
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl);
-            //List<CmnObjRef> refList = selectedHdl.mapObj.GetObjRefList(selectedHdl.tile);
+            //List<CmnObjRef> refList = selectedHdl.obj.GetObjRefList(selectedHdl.tile);
             presenter.SetRelatedObj(relatedHdlList);
-            presenter.ShowAttribute(selectedHdl.mapObj);
+            presenter.ShowAttribute(selectedHdl.obj);
 
             //RefreshDrawArea();
         }
