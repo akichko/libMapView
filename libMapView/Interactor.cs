@@ -142,7 +142,7 @@ namespace libMapView
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl);
             //List<CmnObjRef> refList = selectedHdl.obj.GetObjRefList(selectedHdl.tile);
             presenter.SetRelatedObj(relatedHdlList);
-            presenter.ShowAttribute(selectedHdl.obj);
+            presenter.ShowAttribute(selectedHdl);
 
             //RefreshDrawArea();
         }
@@ -284,7 +284,7 @@ namespace libMapView
         void RefreshDrawArea();
         void UpdateCenterLatLon(LatLon latlon);
         void UpdateCenterTileId(uint tileId);
-        void ShowAttribute(CmnObj mapLink);
+        void ShowAttribute(CmnObjHandle objHdl);
         void SetSelectedObj(CmnObj mapLink);
 
         void SetDrawInterface(CmnDrawApi drawApi);

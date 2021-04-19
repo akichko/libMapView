@@ -90,9 +90,9 @@ namespace libMapView
         }
 
 
-        public void ShowAttribute(CmnObj mapLink)
+        public void ShowAttribute(CmnObjHandle objHdl)
         {
-            viewAccess.DispListView(mapLink.GetAttributeListItem());
+            viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
 
         }
 
@@ -220,12 +220,6 @@ namespace libMapView
     }
 
 
-    public class AttrTag
-    {
-        public int attrType;
-        public int refType;
-        public CmnSearchKey searchKey;
-        public LatLon latlon;
-    }
+
 
 }
