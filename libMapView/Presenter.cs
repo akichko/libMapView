@@ -220,4 +220,12 @@ namespace libMapView
     }
 
 
+    public class AttrTag
+    {
+        public int attrType;
+        public int refType;
+        public CmnSearchKey searchKey;
+        public LatLon latlon;
+    }
+
 }
