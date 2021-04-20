@@ -41,6 +41,10 @@ namespace libMapView
 
         }
 
+        public void SetInteractorSettings(InteractorSettings settings)
+        {
+            interactor.settings = settings;
+        }
 
         //描画パラメータ設定
 

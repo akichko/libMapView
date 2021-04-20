@@ -16,15 +16,17 @@ namespace libMapView
         Presenter presenter;
 
         //動作設定
-        public int ClickSearchRange = 1; //無制限ならint.MaxValue
-        public int tileLoadDistanceX = 3;
-        public int tileLoadDistanceY = 2;
-        public int tileReleaseDistanceX = 15;
-        public int tileReleaseDistanceY = 10;
-        public int tileDrawDistanceX = 2;
-        public int tileDrawDistanceY = 1;
-        public bool isAllTileReadMode = false;
-        public bool isAllTileLoaded = false;
+        public InteractorSettings settings;
+
+        //public int ClickSearchRange = 1; //無制限ならint.MaxValue
+        //public int tileLoadDistanceX = 3;
+        //public int tileLoadDistanceY = 2;
+        //public int tileReleaseDistanceX = 15;
+        //public int tileReleaseDistanceY = 10;
+        //public int tileDrawDistanceX = 2;
+        //public int tileDrawDistanceY = 1;
+        //public bool isAllTileReadMode = false;
+        //public bool isAllTileLoaded = false;
 
         //表示コンテンツ
         public ushort drawMapObjType = 0xffff;
@@ -42,10 +44,14 @@ namespace libMapView
 
         /* 起動・設定・終了 ***********************************************/
 
-        public Interactor(IViewApi outputClass)
+        public Interactor(IViewApi outputClass, InteractorSettings settings = null)
         {
             viewParam = new ViewParam(35.4629, 139.62657, 1.0);
             presenter = new Presenter(outputClass);
+            if (settings != null)
+                this.settings = settings;
+            else
+                this.settings = new InteractorSettings();
         }
 
         public void OpenFile(string fileName, CmnMapMgr mapMgr)
@@ -78,9 +84,9 @@ namespace libMapView
 
         private void RefleshMapCache()
         {
-            if (isAllTileReadMode)
+            if (settings.isAllTileReadMode)
             {
-                if (!isAllTileLoaded)
+                if (!settings.isAllTileLoaded)
                 {
                     //全地図データロード
                     List<uint> tileList = mapMgr.GetMapTileIdList();
@@ -90,18 +96,18 @@ namespace libMapView
                         mapMgr.LoadTile(tileId);
                     }
 
-                    isAllTileLoaded = true;
+                    settings.isAllTileLoaded = true;
                 }
             }
             else
             {
-                isAllTileLoaded = false;
+                settings.isAllTileLoaded = false;
 
                 if (currentTileChanged)
                 {
                     //座標周辺の地図をロード
                     uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
-                    List<uint> tileIdList = mapMgr.tileApi.CalcTileIdAround(centerTileId, tileLoadDistanceX, tileLoadDistanceY);
+                    List<uint> tileIdList = mapMgr.tileApi.CalcTileIdAround(centerTileId, settings.tileLoadDistanceX, settings.tileLoadDistanceY);
 
                     foreach (uint tileId in tileIdList)
                     {
@@ -113,7 +119,7 @@ namespace libMapView
                     foreach (CmnTile tile in tileList)
                     {
                         TileXY offset = mapMgr.tileApi.CalcTileAbsOffset(centerTileId, tile.tileId);
-                        if (offset.x > tileReleaseDistanceX || offset.y > tileReleaseDistanceY)
+                        if (offset.x > settings.tileReleaseDistanceX || offset.y > settings.tileReleaseDistanceY)
                             mapMgr.UnloadTile(tile.tileId);
                     }
 
@@ -130,7 +136,7 @@ namespace libMapView
         {
             if (!drawEnable)
                 return;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, ClickSearchRange);
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange);
 
             if (selectedHdl == null)
             {
@@ -159,7 +165,7 @@ namespace libMapView
             RefleshMapCache();
             
             //描画対象タイルを特定
-            List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), tileDrawDistanceX, tileDrawDistanceY);
+            List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), settings.tileDrawDistanceX, settings.tileDrawDistanceY);
 
             //各タイルを描画
             presenter.DrawTile(g, drawTileList, viewParam, drawObjType);
@@ -292,5 +298,17 @@ namespace libMapView
         //void DispDest(CmnObjHandle linkHdl);
     }
 
+    public class InteractorSettings
+    {
+        public int ClickSearchRange = 1; //無制限ならint.MaxValue
+        public int tileLoadDistanceX = 3;
+        public int tileLoadDistanceY = 2;
+        public int tileReleaseDistanceX = 15;
+        public int tileReleaseDistanceY = 10;
+        public int tileDrawDistanceX = 2;
+        public int tileDrawDistanceY = 1;
+        public bool isAllTileReadMode = false;
+        public bool isAllTileLoaded = false;
+    }
 
 }

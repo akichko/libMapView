@@ -13,9 +13,8 @@ namespace libMapView
     {
         IViewApi viewAccess;
         CmnDrawApi drawApi;
-        //DrawTool drawTool;
 
-        ViewParam viewParam;
+        //ViewParam viewParam;
 
         public LatLon selectedLatLon;
 
@@ -49,13 +48,13 @@ namespace libMapView
 
             //各タイルを描画
 
-            this.viewParam = viewParam;
+            //this.viewParam = viewParam;
 
 
             //コールバック用ローカル関数定義
             int CbDrawFunc(CmnObj cmnObj)
             {
-                return DrawMapObj(g2, viewParam, cmnObj);
+                return DrawMapObj(g2, cmnObj, viewParam);
                 //return DrawMapObj(g, viewParam, cmnObj);
             }
 
@@ -64,7 +63,9 @@ namespace libMapView
                 //各オブジェクト描画
                 drawTile.DrawData(new CbGetObjFunc(CbDrawFunc));
                 //タイル枠描画
-                drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
+                drawApi.DrawObj(g2, (CmnObj)drawTile, viewParam);
+                //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
+                //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
             }
 
             //座標点追加描画
@@ -76,9 +77,9 @@ namespace libMapView
         }
 
 
-        public int DrawMapObj(Graphics g, ViewParam viewParam, CmnObj cmnObj)
+        public int DrawMapObj(Graphics g, CmnObj cmnObj, ViewParam viewParam)
         {
-            drawApi.DrawObj(g, viewParam, cmnObj);
+            drawApi.DrawObj(g, cmnObj, viewParam);
 
             return 0;
         }
@@ -168,6 +169,7 @@ namespace libMapView
     }
 
 
+    //描画用抽象クラス
     public abstract class CmnDrawApi
     {
         public CmnObj selectObj = null;
@@ -177,19 +179,31 @@ namespace libMapView
         public LatLon selectPoint;
 
 
-        public abstract int DrawObj(Graphics g, ViewParam viewParam, CmnObj cmnObj);
-
-        protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
+        //オブジェクト描画
+        public virtual void DrawObj(Graphics g, CmnObj obj, ViewParam viewParam)
         {
-            //相対緯度経度算出
-            double relLat = latlon.lat - viewParam.viewCenter.lat;
-            double relLon = latlon.lon - viewParam.viewCenter.lon;
+            PointF[] pointF = GetPolylineInDrawArea(obj.Geometry, viewParam);
 
-            return new PointF((float)(viewParam.width / 2.0 + relLon * viewParam.GetDotPerLon()), (float)(viewParam.height / 2.0 - relLat * viewParam.GetDotPerLat()));
+            Pen pen = GetPen(obj);
+            g.DrawLines(pen, pointF);
 
+            return;
+        }
+    
+        //デフォルト描画スタイル
+        public virtual Pen GetPen(CmnObj obj)
+        {
+            if (ReferenceEquals(selectObj, obj))
+                return new Pen(Color.Red, (float)4.0);
+
+            if (refObjList?.Count(x => ReferenceEquals(x.objHdl.obj, obj)) > 0)
+                return new Pen(Color.DarkGreen, (float)4.0);
+
+            return new Pen(Color.Black, 1);
         }
 
-        public void DrawPoint(Graphics g, LatLon latlon, ViewParam viewParam)
+        //ポイント描画
+        public virtual void DrawPoint(Graphics g, LatLon latlon, ViewParam viewParam)
         {
             if (latlon == null)
                 return;
@@ -203,20 +217,36 @@ namespace libMapView
 
         }
 
-        public int DrawPolyline(Graphics g, ViewParam viewParam, LatLon[] geometry)
+
+        protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
         {
-            PointF[] pointF = new PointF[geometry.Length];
+            //相対緯度経度算出
+            double relLat = latlon.lat - viewParam.viewCenter.lat;
+            double relLon = latlon.lon - viewParam.viewCenter.lon;
 
-            for (int i = 0; i < geometry.Length; i++)
-            {
-                pointF[i] = CalcPointInDrawArea(geometry[i], viewParam);
-            }
-
-            Pen pen = new Pen(Color.Black);
-            g.DrawLines(pen, pointF);
-            return 0;
+            return new PointF((float)(viewParam.width / 2.0 + relLon * viewParam.GetDotPerLon()), (float)(viewParam.height / 2.0 - relLat * viewParam.GetDotPerLat()));
 
         }
+
+        protected PointF[] GetPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
+        {
+            return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
+        }
+
+        //public int DrawPolyline(Graphics g, ViewParam viewParam, LatLon[] geometry)
+        //{
+        //    PointF[] pointF = new PointF[geometry.Length];
+
+        //    for (int i = 0; i < geometry.Length; i++)
+        //    {
+        //        pointF[i] = CalcPointInDrawArea(geometry[i], viewParam);
+        //    }
+
+        //    Pen pen = new Pen(Color.Black);
+        //    g.DrawLines(pen, pointF);
+        //    return 0;
+
+        //}
     }
 
 
