@@ -18,25 +18,11 @@ namespace libMapView
         //動作設定
         public InteractorSettings settings;
 
-        //public int ClickSearchRange = 1; //無制限ならint.MaxValue
-        //public int tileLoadDistanceX = 3;
-        //public int tileLoadDistanceY = 2;
-        //public int tileReleaseDistanceX = 15;
-        //public int tileReleaseDistanceY = 10;
-        //public int tileDrawDistanceX = 2;
-        //public int tileDrawDistanceY = 1;
-        //public bool isAllTileReadMode = false;
-        //public bool isAllTileLoaded = false;
-
-        //表示コンテンツ
-        public ushort drawMapObjType = 0xffff;
-        public bool isTileBorderDisp = true; 
-
         //制御用
-
         bool drawEnable = false;
         bool isPaintNeeded = true;
-        UInt16 drawObjType = 0xffff;
+        //UInt16 drawObjType = 0xffff;
+        public bool isAllTileLoaded = false;
 
         byte currentTileLv;
         uint currentTileId;
@@ -86,7 +72,7 @@ namespace libMapView
         {
             if (settings.isAllTileReadMode)
             {
-                if (!settings.isAllTileLoaded)
+                if (!isAllTileLoaded)
                 {
                     //全地図データロード
                     List<uint> tileList = mapMgr.GetMapTileIdList();
@@ -96,12 +82,12 @@ namespace libMapView
                         mapMgr.LoadTile(tileId);
                     }
 
-                    settings.isAllTileLoaded = true;
+                    isAllTileLoaded = true;
                 }
             }
             else
             {
-                settings.isAllTileLoaded = false;
+                isAllTileLoaded = false;
 
                 if (currentTileChanged)
                 {
@@ -168,7 +154,7 @@ namespace libMapView
             List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), settings.tileDrawDistanceX, settings.tileDrawDistanceY);
 
             //各タイルを描画
-            presenter.DrawTile(g, drawTileList, viewParam, drawObjType);
+            presenter.DrawTile(g, drawTileList, viewParam, settings.drawMapObjType);
 
             isPaintNeeded = false;
             //presenter.drawMapLink(g, drawTileList, viewParam);
@@ -195,6 +181,10 @@ namespace libMapView
 
         }
 
+        public LatLon GetViewCenter()
+        {
+            return viewParam.viewCenter;
+        }
 
 
         /* 描画用パラメータ変更 ***********************************************/
@@ -300,15 +290,21 @@ namespace libMapView
 
     public class InteractorSettings
     {
-        public int ClickSearchRange = 1; //無制限ならint.MaxValue
+        //読み込み
         public int tileLoadDistanceX = 3;
         public int tileLoadDistanceY = 2;
         public int tileReleaseDistanceX = 15;
         public int tileReleaseDistanceY = 10;
+        public bool isAllTileReadMode = false;
+
+        //検索
+        public int ClickSearchRange = 1; //無制限ならint.MaxValue
+
+        //描画
         public int tileDrawDistanceX = 2;
         public int tileDrawDistanceY = 1;
-        public bool isAllTileReadMode = false;
-        public bool isAllTileLoaded = false;
+        public ushort drawMapObjType = 0xffff;
+        public bool isTileBorderDisp = true;
     }
 
 }

@@ -61,7 +61,7 @@ namespace libMapView
             foreach (CmnTile drawTile in tileList)
             {
                 //各オブジェクト描画
-                drawTile.DrawData(new CbGetObjFunc(CbDrawFunc));
+                drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
                 //タイル枠描画
                 drawApi.DrawObj(g2, (CmnObj)drawTile, viewParam);
                 //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
@@ -182,7 +182,7 @@ namespace libMapView
         //オブジェクト描画
         public virtual void DrawObj(Graphics g, CmnObj obj, ViewParam viewParam)
         {
-            PointF[] pointF = GetPolylineInDrawArea(obj.Geometry, viewParam);
+            PointF[] pointF = CalcPolylineInDrawArea(obj.Geometry, viewParam);
 
             Pen pen = GetPen(obj);
             g.DrawLines(pen, pointF);
@@ -228,7 +228,7 @@ namespace libMapView
 
         }
 
-        protected PointF[] GetPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
+        protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
         {
             return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
         }

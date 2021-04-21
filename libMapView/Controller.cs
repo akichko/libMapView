@@ -12,13 +12,13 @@ namespace libMapView
     {
         private Interactor interactor;
 
-        //初期設定
+        /* 初期設定 **********************************************************/
 
         public Controller(IViewApi outputClass)
         {
             interactor = new Interactor(outputClass);
             interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
-            RefreshDrawArea();
+            //RefreshDrawArea();
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -36,22 +36,24 @@ namespace libMapView
             interactor.Shutdown();
         }
 
-        public void SetViewerMode()
-        {
 
-        }
-
-        public void SetInteractorSettings(InteractorSettings settings)
+        public void SetViewSettings(InteractorSettings settings)
         {
             interactor.settings = settings;
         }
 
-        //描画パラメータ設定
+        /* 描画パラメータ設定 **********************************************************/
 
         public void SetDrawAreaSize(int width, int height)
         {
             interactor.SetDrawAreaSize(width, height);
             //interactor.RefreshDrawArea();
+        }
+
+        public void SetViewCenter(LatLon latlon)
+        {
+            interactor.SetViewCenter(latlon);
+            RefreshDrawArea();
         }
 
         public void MoveViewCenter(int x, int y)
@@ -76,7 +78,7 @@ namespace libMapView
 
 
 
-        //描画
+        /* 描画 **************************************************************/
 
         public void Paint(Graphics g)
         {
@@ -98,7 +100,9 @@ namespace libMapView
         public void LeftClick(int x, int y)
         {
             LatLon clickedLatLon = interactor.GetLatLon(x, y);
-            SearchObject(clickedLatLon);
+            //SearchObject(clickedLatLon);
+            interactor.SearchObject(clickedLatLon);
+            RefreshDrawArea();
         }
 
         public void AttrClick()
@@ -106,11 +110,11 @@ namespace libMapView
 
         }
 
-        private void SearchObject(LatLon clickedLatLon)
-        {
-            interactor.SearchObject(clickedLatLon);
-            RefreshDrawArea();
-        }
+        //private void SearchObject(LatLon clickedLatLon)
+        //{
+        //    interactor.SearchObject(clickedLatLon);
+        //    RefreshDrawArea();
+        //}
 
 
         //属性表示
