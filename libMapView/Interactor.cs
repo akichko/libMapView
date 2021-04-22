@@ -122,7 +122,7 @@ namespace libMapView
         {
             if (!drawEnable)
                 return;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange);
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
 
             if (selectedHdl == null)
             {
@@ -131,7 +131,7 @@ namespace libMapView
             }
             presenter.SetSelectedObj(selectedHdl.obj);
 
-            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl);
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x=>x.objHdl != null).ToList();
             //List<CmnObjRef> refList = selectedHdl.obj.GetObjRefList(selectedHdl.tile);
             presenter.SetRelatedObj(relatedHdlList);
             presenter.ShowAttribute(selectedHdl);
