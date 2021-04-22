@@ -274,8 +274,8 @@ namespace libMapView
 
     public interface IOutputBoundary
     {
-        void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt16 objType);
-      //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt16 objType, ViewParam viewParam);
+        void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt32 objType);
+      //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt32 objType, ViewParam viewParam);
       //  void drawMapLink(Graphics g, List<CmnTile> tileList, ViewParam viewParam);
         void RefreshDrawArea();
         void UpdateCenterLatLon(LatLon latlon);
@@ -303,7 +303,7 @@ namespace libMapView
         //描画
         public int tileDrawDistanceX = 2;
         public int tileDrawDistanceY = 1;
-        public ushort drawMapObjType = 0xffff;
+        public UInt32 drawMapObjType = 0xffffffff;
         public bool isTileBorderDisp = true;
     }
 

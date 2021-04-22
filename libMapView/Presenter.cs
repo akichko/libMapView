@@ -37,7 +37,7 @@ namespace libMapView
         //    this.viewParam = viewParam;
         //}
 
-        public void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt16 objType )
+        public void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt32 objType )
         {
 
             //Graphics g2 = viewAccess.GetDrawAreaGraphics();
