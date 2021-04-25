@@ -136,9 +136,67 @@ namespace libMapView
             presenter.SetRelatedObj(relatedHdlList);
             presenter.ShowAttribute(selectedHdl);
 
-            //RefreshDrawArea();
         }
 
+        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt64 objId)
+        {
+            if (!drawEnable)
+                return null;
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objId);
+
+            if (selectedHdl == null)
+            {
+                presenter.SetRelatedObj(null);
+                return null;
+            }
+            presenter.SetSelectedObj(selectedHdl.obj);
+
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
+            presenter.SetRelatedObj(relatedHdlList);
+            presenter.ShowAttribute(selectedHdl);
+
+            return selectedHdl;
+        }
+
+        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
+        {
+            if (!drawEnable)
+                return null;
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex);
+
+            if (selectedHdl == null)
+            {
+                presenter.SetRelatedObj(null);
+                return null;
+            }
+            presenter.SetSelectedObj(selectedHdl.obj);
+
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
+            presenter.SetRelatedObj(relatedHdlList);
+            presenter.ShowAttribute(selectedHdl);
+
+            return selectedHdl;
+        }
+
+        public CmnObjHandle SearchObject(CmnSearchKey key)
+        {
+            if (!drawEnable)
+                return null;
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(key);
+
+            if (selectedHdl == null)
+            {
+                presenter.SetRelatedObj(null);
+                return null;
+            }
+            presenter.SetSelectedObj(selectedHdl.obj);
+
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
+            presenter.SetRelatedObj(relatedHdlList);
+            presenter.ShowAttribute(selectedHdl);
+
+            return selectedHdl;
+        }
 
         /* 描画 ***********************************************/
 
@@ -170,6 +228,16 @@ namespace libMapView
         {
             presenter.selectedLatLon = latlon;
             isPaintNeeded = true;
+        }
+
+        public void SetRouteGeometry(LatLon[] routeGeometry)
+        {
+            presenter.routeGeometry = routeGeometry;
+        }
+
+        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        {
+            presenter.SetRouteObjList(routeObjList);
         }
 
         public LatLon GetLatLon(int x, int y) //描画エリアのXY→緯度経度

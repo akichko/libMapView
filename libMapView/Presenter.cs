@@ -17,6 +17,7 @@ namespace libMapView
         //ViewParam viewParam;
 
         public LatLon selectedLatLon;
+        public LatLon[] routeGeometry = null;
 
         public Presenter(IViewApi mainForm)
         {
@@ -52,9 +53,9 @@ namespace libMapView
 
 
             //コールバック用ローカル関数定義
-            int CbDrawFunc(CmnObj cmnObj)
+            int CbDrawFunc(CmnTile tile, CmnObj cmnObj)
             {
-                return DrawMapObj(g2, cmnObj, viewParam);
+                return DrawMapObj(g2, tile, cmnObj, viewParam);
                 //return DrawMapObj(g, viewParam, cmnObj);
             }
 
@@ -63,7 +64,7 @@ namespace libMapView
                 //各オブジェクト描画
                 drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
                 //タイル枠描画
-                drawApi.DrawObj(g2, (CmnObj)drawTile, viewParam);
+                drawApi.DrawObj(g2, null, (CmnObj)drawTile, viewParam);
                 //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
                 //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
             }
@@ -71,15 +72,17 @@ namespace libMapView
             //座標点追加描画
             drawApi.DrawPoint(g2, selectedLatLon, viewParam);
 
+            //ルート形状描画
+            drawApi.DrawPolyline(g2, routeGeometry, viewParam);
 
             viewAccess.UpdateImage(bitmap);
             
         }
 
 
-        public int DrawMapObj(Graphics g, CmnObj cmnObj, ViewParam viewParam)
+        public int DrawMapObj(Graphics g, CmnTile tile, CmnObj cmnObj, ViewParam viewParam)
         {
-            drawApi.DrawObj(g, cmnObj, viewParam);
+            drawApi.DrawObj(g, tile, cmnObj, viewParam);
 
             return 0;
         }
@@ -100,12 +103,22 @@ namespace libMapView
         public void SetSelectedObj(CmnObj mapLink)
         {
             drawApi.selectObj = mapLink;
-
         }
 
         public void SetRelatedObj(List<CmnObjHdlRef> refObjList)
         {
             drawApi.refObjList = refObjList;
+        }
+
+        //public void SetRouteGeometry(LatLon[] routeGeometry)
+        //{
+        //    drawApi.routeGeometry = routeGeometry;
+        //}
+
+
+        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        {
+            drawApi.routeObjList = routeObjList;
         }
 
         public void UpdateCenterLatLon(LatLon latlon)
@@ -178,9 +191,12 @@ namespace libMapView
 
         public LatLon selectPoint;
 
+        public List<CmnDirObjHandle> routeObjList = null;
+        //public LatLon[] routeGeometry = null;
+
 
         //オブジェクト描画
-        public virtual void DrawObj(Graphics g, CmnObj obj, ViewParam viewParam)
+        public virtual void DrawObj(Graphics g, CmnTile tile, CmnObj obj, ViewParam viewParam)
         {
             PointF[] pointF = CalcPolylineInDrawArea(obj.Geometry, viewParam);
 
@@ -194,9 +210,12 @@ namespace libMapView
         public virtual Pen GetPen(CmnObj obj)
         {
             if (ReferenceEquals(selectObj, obj))
-                return new Pen(Color.Red, (float)4.0);
+                return new Pen(Color.Red, (float)5.0);
 
-            if (refObjList?.Count(x => ReferenceEquals(x.objHdl.obj, obj)) > 0)
+            else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
+                return new Pen(Color.DarkMagenta, (float)5.0);
+
+            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl.obj, obj)) > 0)
                 return new Pen(Color.DarkGreen, (float)4.0);
 
             return new Pen(Color.Black, 1);
@@ -233,20 +252,19 @@ namespace libMapView
             return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
         }
 
-        //public int DrawPolyline(Graphics g, ViewParam viewParam, LatLon[] geometry)
-        //{
-        //    PointF[] pointF = new PointF[geometry.Length];
+        public void DrawPolyline(Graphics g, LatLon[] polyline, ViewParam viewParam)
+        {
+            if (polyline == null)
+                return;
+            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
 
-        //    for (int i = 0; i < geometry.Length; i++)
-        //    {
-        //        pointF[i] = CalcPointInDrawArea(geometry[i], viewParam);
-        //    }
+            Pen pen = new Pen(Color.FromArgb(96, 255,0,0), 20);
+            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
 
-        //    Pen pen = new Pen(Color.Black);
-        //    g.DrawLines(pen, pointF);
-        //    return 0;
+            g.DrawLines(pen, pointF);
+            return;
 
-        //}
+        }
     }
 
 

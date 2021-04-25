@@ -40,6 +40,7 @@ namespace libMapView
         public void SetViewSettings(InteractorSettings settings)
         {
             interactor.settings = settings;
+            RefreshDrawArea();
         }
 
         /* 描画パラメータ設定 **********************************************************/
@@ -47,7 +48,7 @@ namespace libMapView
         public void SetDrawAreaSize(int width, int height)
         {
             interactor.SetDrawAreaSize(width, height);
-            //interactor.RefreshDrawArea();
+            interactor.RefreshDrawArea();
         }
 
         public void SetViewCenter(LatLon latlon)
@@ -95,6 +96,16 @@ namespace libMapView
             interactor.SetSelectedLatLon(latlon);
         }
 
+        public void SetRouteGeometry(LatLon[] routeGeometry)
+        {
+            interactor.SetRouteGeometry(routeGeometry);
+        }
+
+        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        {
+            interactor.SetRouteObjList(routeObjList);
+        }
+
         //選択
 
         public void LeftClick(int x, int y)
@@ -123,5 +134,38 @@ namespace libMapView
         { }
 
 
+        //検索
+        public void SearchObject(uint tileId, uint objType, UInt64 objId)
+        {
+            interactor.SearchObject(tileId, objType, objId);
+            interactor.RefreshDrawArea();
+
+        }
+
+        public void SearchObject(uint tileId, uint objType, UInt16 objIndex)
+        {
+            CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
+            if(searchedObjHdl != null)
+            {
+                LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
+                if (latlon != null)
+                    interactor.SetViewCenter(latlon);
+            }
+            interactor.RefreshDrawArea();
+
+        }
+
+        public void SearchObject(CmnSearchKey key)
+        {
+            CmnObjHandle searchedObjHdl = interactor.SearchObject(key);
+            if (searchedObjHdl != null)
+            {
+                LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
+                if (latlon != null)
+                    interactor.SetViewCenter(latlon);
+            }
+            interactor.RefreshDrawArea();
+
+        }
     }
 }
