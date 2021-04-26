@@ -14,10 +14,27 @@ namespace libMapView
         IViewApi viewAccess;
         CmnDrawApi drawApi;
 
+        public InteractorSettings settings;
+        public InteractorSettings Settings
+        {
+            get => settings;
+            set {
+                settings = value;
+                drawApi.settings = value;
+            }
+
+        }
+
         //ViewParam viewParam;
 
         public LatLon selectedLatLon;
         public LatLon[] routeGeometry = null;
+        public List<LatLon[]> boundaryList = null;
+
+        //パラメータ
+        public bool isDrawTileBorder = true;
+        //public bool isDrawOneWay = true;
+
 
         public Presenter(IViewApi mainForm)
         {
@@ -32,13 +49,18 @@ namespace libMapView
 
         }
 
+        public void SetViewSettings(InteractorSettings settings)
+        {
+            this.settings = settings;
+            drawApi.settings = settings;
+        }
 
         //public void SetViewParam(ViewParam viewParam)
         //{
         //    this.viewParam = viewParam;
         //}
 
-        public void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt32 objType )
+        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType )
         {
 
             //Graphics g2 = viewAccess.GetDrawAreaGraphics();
@@ -46,6 +68,20 @@ namespace libMapView
 
             //Bitmap daBitmap = viewAccess.GetDrawAreaImage();
             Graphics g2 = Graphics.FromImage(bitmap);
+
+            Pen pen;
+
+            //背景形状を描画
+            if(boundaryList != null && settings.isAdminBoundaryDisp)
+            {
+                pen = new Pen(Color.Gray, 1);
+                boundaryList.ForEach(x =>
+                {
+                    drawApi.DrawPolyline(g2, x, pen, viewParam);
+                });
+
+            }
+
 
             //各タイルを描画
 
@@ -63,20 +99,32 @@ namespace libMapView
             {
                 //各オブジェクト描画
                 drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
+
                 //タイル枠描画
-                drawApi.DrawObj(g2, null, (CmnObj)drawTile, viewParam);
-                //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
-                //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
+                if (settings.isTileBorderDisp)
+                {
+                    drawApi.DrawObj(g2, null, (CmnObj)drawTile, viewParam);
+                    //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
+                    //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
+
+                }
             }
 
             //座標点追加描画
             drawApi.DrawPoint(g2, selectedLatLon, viewParam);
 
             //ルート形状描画
-            drawApi.DrawPolyline(g2, routeGeometry, viewParam);
+
+            pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
+            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+            drawApi.DrawPolyline(g2, routeGeometry, pen, viewParam);
+
+            //中心十字描画
+
+
+
 
             viewAccess.UpdateImage(bitmap);
-            
         }
 
 
@@ -105,6 +153,16 @@ namespace libMapView
             drawApi.selectObj = mapLink;
         }
 
+        public void SetSelectedAttr(CmnObjHandle selectAttr)
+        {
+            drawApi.selectAttr = selectAttr;
+        }
+
+        //public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
+        //{
+        //    drawApi.boundaryList = boundaryList;
+        //            }
+
         public void SetRelatedObj(List<CmnObjHdlRef> refObjList)
         {
             drawApi.refObjList = refObjList;
@@ -116,10 +174,12 @@ namespace libMapView
         //}
 
 
-        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
-        {
-            drawApi.routeObjList = routeObjList;
-        }
+        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        //{
+        //    drawApi.routeObjList = routeObjList;
+        //}
+
+        /* ステータスバー用 ***************************************************************/
 
         public void UpdateCenterLatLon(LatLon latlon)
         {
@@ -130,6 +190,12 @@ namespace libMapView
         {
             viewAccess.DispCurrentTileId(tileId);
         }
+
+        public void UpdateClickedLatLon(LatLon latlon)
+        {
+            viewAccess.DispClickedLatLon(latlon);
+        }
+
 
         //public void DispDest(CmnObjHandle linkHdl)
         //{
@@ -144,16 +210,22 @@ namespace libMapView
     //    Graphics GetDrawAreaGraphics();
     //    void SetDrawAreaImage(Bitmap bmp);
 
+        //描画エリア
+        void UpdateImage(Image newImage);
         void RefreshDrawArea();
-        void DispCurrentTileId(uint tileId);
+
+        //属性表示
         void DispListView(List<AttrItemInfo> listItem);
 
+        //ステータスバー
+        void DispCurrentTileId(uint tileId);
         void DispCenterLatLon(LatLon latlon);
+        void DispClickedLatLon(LatLon latlon);
+
+
         //ViewModel GetViewModel();
 
         //Image GetDrawAreaImage();
-
-        void UpdateImage(Image newImage);
 
         //Route
         //void DispDest(string destStr);
@@ -182,16 +254,21 @@ namespace libMapView
     }
 
 
-    //描画用抽象クラス
+    /* 描画用抽象クラス ****************************************************************************************/
     public abstract class CmnDrawApi
     {
+        //個別描画用
         public CmnObj selectObj = null;
-
+        public CmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
-
         public LatLon selectPoint;
+        //public List<CmnDirObjHandle> routeObjList = null;
 
-        public List<CmnDirObjHandle> routeObjList = null;
+        public InteractorSettings settings;
+        //public bool isDrawOneWay = true;
+
+        /* 描画 ==================================================================================*/
+
         //public LatLon[] routeGeometry = null;
 
 
@@ -212,8 +289,8 @@ namespace libMapView
             if (ReferenceEquals(selectObj, obj))
                 return new Pen(Color.Red, (float)5.0);
 
-            else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
-                return new Pen(Color.DarkMagenta, (float)5.0);
+            //else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
+            //    return new Pen(Color.DarkMagenta, (float)5.0);
 
             else if (refObjList?.Count(x => ReferenceEquals(x.objHdl.obj, obj)) > 0)
                 return new Pen(Color.DarkGreen, (float)4.0);
@@ -236,6 +313,28 @@ namespace libMapView
 
         }
 
+        public void DrawPolyline(Graphics g, LatLon[] polyline, Pen pen, ViewParam viewParam)
+        {
+            if (polyline == null)
+                return;
+            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
+
+            g.DrawLines(pen, pointF);
+            return;
+        }
+
+        public void DrawPolyline(Graphics g, LatLon[] polyline, ViewParam viewParam)
+        {
+            if (polyline == null)
+                return;
+            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
+
+            Pen pen = new Pen(Color.FromArgb(96, 255,0,0), 20);
+            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+
+            g.DrawLines(pen, pointF);
+            return;
+        }
 
         protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
         {
@@ -252,19 +351,8 @@ namespace libMapView
             return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
         }
 
-        public void DrawPolyline(Graphics g, LatLon[] polyline, ViewParam viewParam)
-        {
-            if (polyline == null)
-                return;
-            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
 
-            Pen pen = new Pen(Color.FromArgb(96, 255,0,0), 20);
-            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
 
-            g.DrawLines(pen, pointF);
-            return;
-
-        }
     }
 
 

@@ -21,7 +21,6 @@ namespace libMapView
         //制御用
         bool drawEnable = false;
         bool isPaintNeeded = true;
-        //UInt16 drawObjType = 0xffff;
         public bool isAllTileLoaded = false;
 
         byte currentTileLv;
@@ -30,14 +29,10 @@ namespace libMapView
 
         /* 起動・設定・終了 ***********************************************/
 
-        public Interactor(IViewApi outputClass, InteractorSettings settings = null)
+        public Interactor(IViewApi outputClass)
         {
             viewParam = new ViewParam(35.4629, 139.62657, 1.0);
             presenter = new Presenter(outputClass);
-            if (settings != null)
-                this.settings = settings;
-            else
-                this.settings = new InteractorSettings();
         }
 
         public void OpenFile(string fileName, CmnMapMgr mapMgr)
@@ -63,6 +58,11 @@ namespace libMapView
         {
             if(mapMgr != null)
                 mapMgr.Disconnect();
+        }
+
+        public void SetViewSettings(InteractorSettings settings)
+        {
+            this.settings = settings;
         }
 
 
@@ -200,7 +200,7 @@ namespace libMapView
 
         /* 描画 ***********************************************/
 
-        public void Paint(Graphics g)
+        public void Paint()
         {
             if (!drawEnable || !isPaintNeeded)
                 return;
@@ -212,7 +212,8 @@ namespace libMapView
             List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), settings.tileDrawDistanceX, settings.tileDrawDistanceY);
 
             //各タイルを描画
-            presenter.DrawTile(g, drawTileList, viewParam, settings.drawMapObjType);
+            presenter.SetViewSettings(settings);
+            presenter.DrawTile(drawTileList, viewParam, settings.drawMapObjType);
 
             isPaintNeeded = false;
             //presenter.drawMapLink(g, drawTileList, viewParam);
@@ -235,10 +236,28 @@ namespace libMapView
             presenter.routeGeometry = routeGeometry;
         }
 
-        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
         {
-            presenter.SetRouteObjList(routeObjList);
+            presenter.boundaryList = boundaryList;
         }
+
+        public void SetClickedLatLon(LatLon clickedLatLon)
+        {
+            presenter.UpdateClickedLatLon(clickedLatLon);
+        }
+
+        public void SetSelectedAttr(CmnObjHandle selectedAttr)
+        {
+            presenter.SetSelectedAttr(selectedAttr);
+            isPaintNeeded = true;
+        }
+
+
+
+        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        //{
+        //    presenter.SetRouteObjList(routeObjList);
+        //}
 
         public LatLon GetLatLon(int x, int y) //描画エリアのXY→緯度経度
         {
@@ -331,6 +350,26 @@ namespace libMapView
         /* その他 ***********************************************/
 
 
+        public void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            CmnRouteMgr routeMgr = new CmnRouteMgr(mapMgr);
+
+            routeMgr.orgLatLon = orgLatLon;
+            routeMgr.dstLatLon = dstLatLon;
+
+            //Prepare
+            routeMgr.Prepare(false);
+
+            //計算
+            routeMgr.CalcRoute();
+
+            SetRouteGeometry(routeMgr.GetResult());
+
+            return;
+        }
+
+
+
         public void ShowAttribute()
         { }
     }
@@ -342,7 +381,7 @@ namespace libMapView
 
     public interface IOutputBoundary
     {
-        void DrawTile(Graphics g, List<CmnTile> tileList, ViewParam viewParam, UInt32 objType);
+        void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType);
       //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt32 objType, ViewParam viewParam);
       //  void drawMapLink(Graphics g, List<CmnTile> tileList, ViewParam viewParam);
         void RefreshDrawArea();
@@ -373,6 +412,8 @@ namespace libMapView
         public int tileDrawDistanceY = 1;
         public UInt32 drawMapObjType = 0xffffffff;
         public bool isTileBorderDisp = true;
+        public bool isOneWayDisp = false;
+        public bool isAdminBoundaryDisp = true;
     }
 
 }

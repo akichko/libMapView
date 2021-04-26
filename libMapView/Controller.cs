@@ -14,11 +14,11 @@ namespace libMapView
 
         /* 初期設定 **********************************************************/
 
-        public Controller(IViewApi outputClass)
+        public Controller(IViewApi outputClass, InteractorSettings settings)
         {
             interactor = new Interactor(outputClass);
             interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
-            //RefreshDrawArea();
+            interactor.SetViewSettings(settings);
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -39,7 +39,7 @@ namespace libMapView
 
         public void SetViewSettings(InteractorSettings settings)
         {
-            interactor.settings = settings;
+            interactor.SetViewSettings(settings);
             RefreshDrawArea();
         }
 
@@ -77,13 +77,26 @@ namespace libMapView
 
         }
 
+        public void ChangeSetting(ControlMenu menu)
+        {
 
+        }
+
+        public enum ControlMenu
+        {
+            DispOneWayON,
+            DispOneWayOFF,
+            DispTileBorderON,
+            DispTileBorderOFF,
+            BiggerDispArea,
+            SmallerDispArea
+        }
 
         /* 描画 **************************************************************/
 
-        public void Paint(Graphics g)
+        public void Paint()
         {
-            interactor.Paint(g);
+            interactor.Paint();
         }
 
         public void RefreshDrawArea()
@@ -101,10 +114,15 @@ namespace libMapView
             interactor.SetRouteGeometry(routeGeometry);
         }
 
-        public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
         {
-            interactor.SetRouteObjList(routeObjList);
+            interactor.SetBoundaryGeometry(boundaryList);
         }
+
+        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
+        //{
+        //    interactor.SetRouteObjList(routeObjList);
+        //}
 
         //選択
 
@@ -113,6 +131,8 @@ namespace libMapView
             LatLon clickedLatLon = interactor.GetLatLon(x, y);
             //SearchObject(clickedLatLon);
             interactor.SearchObject(clickedLatLon);
+
+            interactor.SetClickedLatLon(clickedLatLon);
             RefreshDrawArea();
         }
 
@@ -166,6 +186,20 @@ namespace libMapView
             }
             interactor.RefreshDrawArea();
 
+        }
+
+
+        public void SelectAttribute(CmnSearchKey key)
+        {
+            CmnObjHandle attrObjHdl = interactor.SearchObject(key);
+            interactor.SetSelectedAttr(attrObjHdl);
+
+        }
+
+
+        public void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        {
+            interactor.CalcRoute(orgLatLon, dstLatLon);
         }
     }
 }
