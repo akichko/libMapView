@@ -60,7 +60,7 @@ namespace libMapView
         //    this.viewParam = viewParam;
         //}
 
-        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType )
+        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType, Dictionary<uint, ushort> subTypeDic )
         {
 
             //Graphics g2 = viewAccess.GetDrawAreaGraphics();
@@ -98,7 +98,14 @@ namespace libMapView
             foreach (CmnTile drawTile in tileList)
             {
                 //各オブジェクト描画
-                drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
+                if(subTypeDic != null)
+                {
+                    drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), subTypeDic);
+                }
+                else
+                {
+                    drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
+                }
 
                 //タイル枠描画
                 if (settings.isTileBorderDisp)

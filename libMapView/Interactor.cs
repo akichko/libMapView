@@ -213,7 +213,7 @@ namespace libMapView
 
             //各タイルを描画
             presenter.SetViewSettings(settings);
-            presenter.DrawTile(drawTileList, viewParam, settings.drawMapObjType);
+            presenter.DrawTile(drawTileList, viewParam, settings.drawMapObjType, settings.drawMapSubType);
 
             isPaintNeeded = false;
             //presenter.drawMapLink(g, drawTileList, viewParam);
@@ -381,7 +381,7 @@ namespace libMapView
 
     public interface IOutputBoundary
     {
-        void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType);
+        void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType, Dictionary<uint, UInt16> subType);
       //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt32 objType, ViewParam viewParam);
       //  void drawMapLink(Graphics g, List<CmnTile> tileList, ViewParam viewParam);
         void RefreshDrawArea();
@@ -411,9 +411,23 @@ namespace libMapView
         public int tileDrawDistanceX = 2;
         public int tileDrawDistanceY = 1;
         public UInt32 drawMapObjType = 0xffffffff;
+       // public UInt16 drawLinkSubType = 0xffff;
         public bool isTileBorderDisp = true;
         public bool isOneWayDisp = false;
         public bool isAdminBoundaryDisp = true;
+
+        public Dictionary<UInt32, UInt16> drawMapSubType;
+
+        public InteractorSettings()
+        {
+        }
+
+        public void SetMapSubType(uint type, ushort subType)
+        {
+            if(drawMapSubType == null)
+                drawMapSubType = new Dictionary<uint, ushort>();
+            drawMapSubType[type] = subType;
+        }
     }
 
 }
