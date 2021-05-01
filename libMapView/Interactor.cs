@@ -122,7 +122,7 @@ namespace libMapView
         {
             if (!drawEnable)
                 return;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
+            ICmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
 
             if (selectedHdl == null)
             {
@@ -138,11 +138,11 @@ namespace libMapView
 
         }
 
-        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt64 objId)
+        public ICmnObjHandle SearchObject(uint tileId, uint objType, UInt64 objId)
         {
             if (!drawEnable)
                 return null;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objId);
+            ICmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objId);
 
             if (selectedHdl == null)
             {
@@ -158,11 +158,11 @@ namespace libMapView
             return selectedHdl;
         }
 
-        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
+        public ICmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
         {
             if (!drawEnable)
                 return null;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex);
+            ICmnObjHandle selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex);
 
             if (selectedHdl == null)
             {
@@ -178,11 +178,11 @@ namespace libMapView
             return selectedHdl;
         }
 
-        public CmnObjHandle SearchObject(CmnSearchKey key)
+        public ICmnObjHandle SearchObject(CmnSearchKey key)
         {
             if (!drawEnable)
                 return null;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(key);
+            ICmnObjHandle selectedHdl = mapMgr.SearchObj(key);
 
             if (selectedHdl == null)
             {
@@ -246,7 +246,7 @@ namespace libMapView
             presenter.UpdateClickedLatLon(clickedLatLon);
         }
 
-        public void SetSelectedAttr(CmnObjHandle selectedAttr)
+        public void SetSelectedAttr(ICmnObjHandle selectedAttr)
         {
             presenter.SetSelectedAttr(selectedAttr);
             isPaintNeeded = true;
@@ -387,7 +387,7 @@ namespace libMapView
         void RefreshDrawArea();
         void UpdateCenterLatLon(LatLon latlon);
         void UpdateCenterTileId(uint tileId);
-        void ShowAttribute(CmnObjHandle objHdl);
+        void ShowAttribute(ICmnObjHandle objHdl);
         void SetSelectedObj(CmnObj mapLink);
 
         void SetDrawInterface(CmnDrawApi drawApi);

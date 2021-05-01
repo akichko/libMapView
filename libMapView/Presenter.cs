@@ -87,11 +87,18 @@ namespace libMapView
 
             //this.viewParam = viewParam;
 
+            
+            ////コールバック用ローカル関数定義
+            //int CbDrawFunc(CmnTile tile, CmnObj cmnObj)
+            //{
+            //    return DrawMapObj(g2, tile, cmnObj, viewParam);
+            //    //return DrawMapObj(g, viewParam, cmnObj);
+            //}
 
             //コールバック用ローカル関数定義
-            int CbDrawFunc(CmnTile tile, CmnObj cmnObj)
+            int CbDrawFunc(ICmnObjHandle objHdl)
             {
-                return DrawMapObj(g2, tile, cmnObj, viewParam);
+                return DrawMapObj(g2, objHdl, viewParam);
                 //return DrawMapObj(g, viewParam, cmnObj);
             }
 
@@ -110,7 +117,7 @@ namespace libMapView
                 //タイル枠描画
                 if (settings.isTileBorderDisp)
                 {
-                    drawApi.DrawObj(g2, null, (CmnObj)drawTile, viewParam);
+                    drawApi.DrawObj(g2, drawTile.ToICmnObjHandle(drawTile), viewParam);
                     //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
                     //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
 
@@ -135,9 +142,9 @@ namespace libMapView
         }
 
 
-        public int DrawMapObj(Graphics g, CmnTile tile, CmnObj cmnObj, ViewParam viewParam)
+        public int DrawMapObj(Graphics g, ICmnObjHandle objHdl, ViewParam viewParam)
         {
-            drawApi.DrawObj(g, tile, cmnObj, viewParam);
+            drawApi.DrawObj(g, objHdl, viewParam);
 
             return 0;
         }
@@ -149,9 +156,11 @@ namespace libMapView
         }
 
 
-        public void ShowAttribute(CmnObjHandle objHdl)
+        public void ShowAttribute(ICmnObjHandle objHdl)
         {
-            viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
+            objHdl = objHdl.obj.ToICmnObjHandle(objHdl.tile);
+            viewAccess.DispListView(objHdl.GetAttributeListItem());
+           // viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
 
         }
 
@@ -160,7 +169,7 @@ namespace libMapView
             drawApi.selectObj = mapLink;
         }
 
-        public void SetSelectedAttr(CmnObjHandle selectAttr)
+        public void SetSelectedAttr(ICmnObjHandle selectAttr)
         {
             drawApi.selectAttr = selectAttr;
         }
@@ -266,7 +275,7 @@ namespace libMapView
     {
         //個別描画用
         public CmnObj selectObj = null;
-        public CmnObjHandle selectAttr = null;
+        public ICmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
         public LatLon selectPoint;
         //public List<CmnDirObjHandle> routeObjList = null;
@@ -280,11 +289,11 @@ namespace libMapView
 
 
         //オブジェクト描画
-        public virtual void DrawObj(Graphics g, CmnTile tile, CmnObj obj, ViewParam viewParam)
+        public virtual void DrawObj(Graphics g, ICmnObjHandle objHdl, ViewParam viewParam)
         {
-            PointF[] pointF = CalcPolylineInDrawArea(obj.Geometry, viewParam);
+            PointF[] pointF = CalcPolylineInDrawArea(objHdl.obj.Geometry, viewParam);
 
-            Pen pen = GetPen(obj);
+            Pen pen = GetPen(objHdl.obj);
             g.DrawLines(pen, pointF);
 
             return;
