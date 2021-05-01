@@ -96,7 +96,7 @@ namespace libMapView
             //}
 
             //コールバック用ローカル関数定義
-            int CbDrawFunc(ICmnObjHandle objHdl)
+            int CbDrawFunc(CmnObjHandle objHdl)
             {
                 return DrawMapObj(g2, objHdl, viewParam);
                 //return DrawMapObj(g, viewParam, cmnObj);
@@ -117,7 +117,7 @@ namespace libMapView
                 //タイル枠描画
                 if (settings.isTileBorderDisp)
                 {
-                    drawApi.DrawObj(g2, drawTile.ToICmnObjHandle(drawTile), viewParam);
+                    drawApi.DrawObj(g2, drawTile.ToCmnObjHandle(drawTile), viewParam);
                     //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
                     //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
 
@@ -142,7 +142,7 @@ namespace libMapView
         }
 
 
-        public int DrawMapObj(Graphics g, ICmnObjHandle objHdl, ViewParam viewParam)
+        public int DrawMapObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
         {
             drawApi.DrawObj(g, objHdl, viewParam);
 
@@ -156,9 +156,9 @@ namespace libMapView
         }
 
 
-        public void ShowAttribute(ICmnObjHandle objHdl)
+        public void ShowAttribute(CmnObjHandle objHdl)
         {
-            objHdl = objHdl.obj.ToICmnObjHandle(objHdl.tile);
+            objHdl = objHdl.obj.ToCmnObjHandle(objHdl.tile);
             viewAccess.DispListView(objHdl.GetAttributeListItem());
            // viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
 
@@ -169,7 +169,7 @@ namespace libMapView
             drawApi.selectObj = mapLink;
         }
 
-        public void SetSelectedAttr(ICmnObjHandle selectAttr)
+        public void SetSelectedAttr(CmnObjHandle selectAttr)
         {
             drawApi.selectAttr = selectAttr;
         }
@@ -275,7 +275,7 @@ namespace libMapView
     {
         //個別描画用
         public CmnObj selectObj = null;
-        public ICmnObjHandle selectAttr = null;
+        public CmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
         public LatLon selectPoint;
         //public List<CmnDirObjHandle> routeObjList = null;
@@ -289,7 +289,7 @@ namespace libMapView
 
 
         //オブジェクト描画
-        public virtual void DrawObj(Graphics g, ICmnObjHandle objHdl, ViewParam viewParam)
+        public virtual void DrawObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
         {
             PointF[] pointF = CalcPolylineInDrawArea(objHdl.obj.Geometry, viewParam);
 

@@ -164,7 +164,7 @@ namespace libMapView
 
         public void SearchObject(uint tileId, uint objType, UInt16 objIndex)
         {
-            ICmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
+            CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
             if(searchedObjHdl != null)
             {
                 LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
@@ -177,7 +177,7 @@ namespace libMapView
 
         public void SearchObject(CmnSearchKey key)
         {
-            ICmnObjHandle searchedObjHdl = interactor.SearchObject(key);
+            CmnObjHandle searchedObjHdl = interactor.SearchObject(key);
             if (searchedObjHdl != null)
             {
                 LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
@@ -191,7 +191,7 @@ namespace libMapView
 
         public void SelectAttribute(CmnSearchKey key)
         {
-            ICmnObjHandle attrObjHdl = interactor.SearchObject(key);
+            CmnObjHandle attrObjHdl = interactor.SearchObject(key);
             interactor.SetSelectedAttr(attrObjHdl);
 
         }
