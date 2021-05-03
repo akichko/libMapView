@@ -158,15 +158,15 @@ namespace libMapView
 
         public void ShowAttribute(CmnObjHandle objHdl)
         {
-            objHdl = objHdl.obj.ToCmnObjHandle(objHdl.tile);
+            //objHdl = objHdl.obj.ToCmnObjHandle(objHdl.tile);
             viewAccess.DispListView(objHdl.GetAttributeListItem());
            // viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
 
         }
 
-        public void SetSelectedObj(CmnObj mapLink)
+        public void SetSelectedObjHdl(CmnObjHandle objHdl)
         {
-            drawApi.selectObj = mapLink;
+            drawApi.selectObjHdl = objHdl;
         }
 
         public void SetSelectedAttr(CmnObjHandle selectAttr)
@@ -274,7 +274,7 @@ namespace libMapView
     public abstract class CmnDrawApi
     {
         //個別描画用
-        public CmnObj selectObj = null;
+        public CmnObjHandle selectObjHdl = null;
         public CmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
         public LatLon selectPoint;
@@ -291,24 +291,24 @@ namespace libMapView
         //オブジェクト描画
         public virtual void DrawObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
         {
-            PointF[] pointF = CalcPolylineInDrawArea(objHdl.obj.Geometry, viewParam);
+            PointF[] pointF = CalcPolylineInDrawArea(objHdl.Geometry, viewParam);
 
-            Pen pen = GetPen(objHdl.obj);
+            Pen pen = GetPen(objHdl);
             g.DrawLines(pen, pointF);
 
             return;
         }
     
         //デフォルト描画スタイル
-        public virtual Pen GetPen(CmnObj obj)
+        public virtual Pen GetPen(CmnObjHandle objHdl)
         {
-            if (ReferenceEquals(selectObj, obj))
+            if (ReferenceEquals(selectObjHdl, objHdl))
                 return new Pen(Color.Red, (float)5.0);
 
             //else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
             //    return new Pen(Color.DarkMagenta, (float)5.0);
 
-            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl.obj, obj)) > 0)
+            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
                 return new Pen(Color.DarkGreen, (float)4.0);
 
             return new Pen(Color.Black, 1);

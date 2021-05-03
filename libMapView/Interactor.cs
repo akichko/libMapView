@@ -129,7 +129,7 @@ namespace libMapView
                 presenter.SetRelatedObj(null);
                 return;
             }
-            presenter.SetSelectedObj(selectedHdl.obj);
+            presenter.SetSelectedObjHdl(selectedHdl);
 
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x=>x.objHdl != null).ToList();
             //List<CmnObjRef> refList = selectedHdl.obj.GetObjRefList(selectedHdl.tile);
@@ -149,7 +149,7 @@ namespace libMapView
                 presenter.SetRelatedObj(null);
                 return null;
             }
-            presenter.SetSelectedObj(selectedHdl.obj);
+            presenter.SetSelectedObjHdl(selectedHdl);
 
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
             presenter.SetRelatedObj(relatedHdlList);
@@ -169,7 +169,7 @@ namespace libMapView
                 presenter.SetRelatedObj(null);
                 return null;
             }
-            presenter.SetSelectedObj(selectedHdl.obj);
+            presenter.SetSelectedObjHdl(selectedHdl);
 
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
             presenter.SetRelatedObj(relatedHdlList);
@@ -189,7 +189,7 @@ namespace libMapView
                 presenter.SetRelatedObj(null);
                 return null;
             }
-            presenter.SetSelectedObj(selectedHdl.obj);
+            presenter.SetSelectedObjHdl(selectedHdl);
 
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl).Where(x => x.objHdl != null).ToList();
             presenter.SetRelatedObj(relatedHdlList);
@@ -388,7 +388,7 @@ namespace libMapView
         void UpdateCenterLatLon(LatLon latlon);
         void UpdateCenterTileId(uint tileId);
         void ShowAttribute(CmnObjHandle objHdl);
-        void SetSelectedObj(CmnObj mapLink);
+        void SetSelectedObjHdl(CmnObjHandle objHdl);
 
         void SetDrawInterface(CmnDrawApi drawApi);
 

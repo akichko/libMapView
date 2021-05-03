@@ -167,7 +167,7 @@ namespace libMapView
             CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
             if(searchedObjHdl != null)
             {
-                LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
+                LatLon latlon = searchedObjHdl.GetCenterLatLon();
                 if (latlon != null)
                     interactor.SetViewCenter(latlon);
             }
@@ -180,7 +180,7 @@ namespace libMapView
             CmnObjHandle searchedObjHdl = interactor.SearchObject(key);
             if (searchedObjHdl != null)
             {
-                LatLon latlon = searchedObjHdl.obj.GetCenterLatLon();
+                LatLon latlon = searchedObjHdl.GetCenterLatLon();
                 if (latlon != null)
                     interactor.SetViewCenter(latlon);
             }
