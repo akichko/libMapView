@@ -13,6 +13,10 @@ namespace libMapView
     {
         IViewApi viewAccess;
         CmnDrawApi drawApi;
+        ViewParam viewParam;
+
+        Bitmap drawAreaBitmap;
+        Graphics g;
 
         public InteractorSettings settings;
         public InteractorSettings Settings
@@ -22,7 +26,6 @@ namespace libMapView
                 settings = value;
                 drawApi.settings = value;
             }
-
         }
 
         //ViewParam viewParam;
@@ -55,92 +58,120 @@ namespace libMapView
             drawApi.settings = settings;
         }
 
-        //public void SetViewParam(ViewParam viewParam)
-        //{
-        //    this.viewParam = viewParam;
-        //}
 
-        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType, Dictionary<uint, ushort> subTypeDic )
+        /* 描画 ******************************************************/
+
+        //初期化
+        public void InitializeGraphics(ViewParam viewParam)
         {
+            drawAreaBitmap = viewParam.CreateBitmap();
+            g = Graphics.FromImage(drawAreaBitmap);
+            this.viewParam = viewParam;
+        }
 
-            //Graphics g2 = viewAccess.GetDrawAreaGraphics();
-            Bitmap bitmap = viewParam.CreateBitmap();
-
-            //Bitmap daBitmap = viewAccess.GetDrawAreaImage();
-            Graphics g2 = Graphics.FromImage(bitmap);
-
-            Pen pen;
-
+        //背景
+        public void DrawBackGround()
+        {
             //背景形状を描画
-            if(boundaryList != null && settings.isAdminBoundaryDisp)
+            if (boundaryList != null && settings.isAdminBoundaryDisp)
             {
-                pen = new Pen(Color.Gray, 1);
+                Pen pen = new Pen(Color.Gray, 1);
                 boundaryList.ForEach(x =>
                 {
-                    drawApi.DrawPolyline(g2, x, pen, viewParam);
+                    drawApi.DrawPolyline(g, x, pen, viewParam);
                 });
-
             }
+        }
 
-
+        //地図描画
+        public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter)
+        {
             //各タイルを描画
-
-            //this.viewParam = viewParam;
-
-            
-            ////コールバック用ローカル関数定義
-            //int CbDrawFunc(CmnTile tile, CmnObj cmnObj)
-            //{
-            //    return DrawMapObj(g2, tile, cmnObj, viewParam);
-            //    //return DrawMapObj(g, viewParam, cmnObj);
-            //}
 
             //コールバック用ローカル関数定義
             int CbDrawFunc(CmnObjHandle objHdl)
             {
-                return DrawMapObj(g2, objHdl, viewParam);
-                //return DrawMapObj(g, viewParam, cmnObj);
+                return DrawMapObj(g, objHdl, viewParam);
             }
 
             foreach (CmnTile drawTile in tileList)
             {
                 //各オブジェクト描画
-                if(subTypeDic != null)
-                {
-                    drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), subTypeDic);
-                }
-                else
-                {
-                    drawTile.DrawData(new CbGetObjFunc(CbDrawFunc), objType);
-                }
+                drawTile.ExeDrawFunc(new CbGetObjFunc(CbDrawFunc), filter);
 
                 //タイル枠描画
-                if (settings.isTileBorderDisp)
-                {
-                    drawApi.DrawObj(g2, drawTile.ToCmnObjHandle(drawTile), viewParam);
-                    //drawTile.DrawData(null, new CbGetObjFunc(CbDrawFunc));
-                    //drawApi.DrawPolyline(g2, viewParam, drawTile.tileInfo.GetGeometry());
+                //if (settings.isTileBorderDisp)
+                //{
+                //    drawApi.DrawObj(g, drawTile.ToCmnObjHandle(drawTile), viewParam);
 
-                }
+                //}
             }
-
-            //座標点追加描画
-            drawApi.DrawPoint(g2, selectedLatLon, viewParam);
-
-            //ルート形状描画
-
-            pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
-            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
-            drawApi.DrawPolyline(g2, routeGeometry, pen, viewParam);
-
-            //中心十字描画
-
-
-
-
-            viewAccess.UpdateImage(bitmap);
         }
 
+        //タイル枠描画
+        public void DrawTileBorder(List<CmnTile> tileList)
+        {
+            if (settings.isTileBorderDisp)
+            {
+                tileList.ForEach(x=>drawApi.DrawObj(g, x.ToCmnObjHandle(x), viewParam));
+            }
+            //foreach (CmnTile drawTile in tileList)
+            //{
+            //    if (settings.isTileBorderDisp)
+            //    {
+            //        drawApi.DrawObj(g, drawTile.ToCmnObjHandle(drawTile), viewParam);
+            //    }
+            //}
+        }
+
+        //座標点追加描画
+        public void DrawPoint(LatLon latlon)
+        {
+            drawApi.DrawPoint(g, selectedLatLon, viewParam);
+        }
+
+        //経路計算結果描画
+        public void DrawRouteGeometry()
+        {
+            //ルート形状描画
+            Pen pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
+            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+            drawApi.DrawPolyline(g, routeGeometry, pen, viewParam);
+        }
+
+        //描画結果反映
+        public void UpdateImage()
+        {
+            viewAccess.UpdateImage(drawAreaBitmap);
+        }
+
+
+        //描画メイン
+        //public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter)
+        //{
+        //    //Graphics初期化
+        //    InitializeGraphics(viewParam);
+
+        //    //背景形状を描画
+        //    DrawBackGround();
+
+        //    //各タイルを描画
+        //    DrawMap(tileList, filter);
+
+        //    //タイル枠描画
+        //    DrawTileBorder(tileList);
+
+        //    //選択座標点追加描画
+        //    DrawPoint(selectedLatLon);
+
+        //    //ルート形状描画
+        //    DrawRouteGeometry();
+
+        //    //中心十字描画
+
+        //    //描画エリア更新
+        //    UpdateImage();
+        //}
 
         public int DrawMapObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
         {
@@ -210,6 +241,21 @@ namespace libMapView
         public void UpdateClickedLatLon(LatLon latlon)
         {
             viewAccess.DispClickedLatLon(latlon);
+        }
+
+        public void SetBoundaryList(List<LatLon[]> boundaryList)
+        {
+            this.boundaryList = boundaryList;
+        }
+
+        public void SetRouteGeometry(LatLon[] routeGeometry)
+        {
+            this.routeGeometry = routeGeometry;
+        }
+
+        public void SetSelectedLatLon(LatLon latlon)
+        {
+            this.selectedLatLon = latlon;
         }
 
 
@@ -369,6 +415,12 @@ namespace libMapView
 
 
 
+        public virtual RangeFilter<ushort> GetFilter(uint number) => null;
+
+        public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
+        {
+            return filter.AddRule(objType, subFilter);
+        }
     }
 
 

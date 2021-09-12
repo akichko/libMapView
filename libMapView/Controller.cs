@@ -10,13 +10,13 @@ namespace libMapView
 {
     public class Controller
     {
-        private Interactor interactor;
+        private IInputBoundary interactor;
 
         /* 初期設定 **********************************************************/
 
         public Controller(IViewApi outputClass, InteractorSettings settings)
         {
-            interactor = new Interactor(outputClass);
+            interactor = new Interactor(new Presenter(outputClass));
             interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
             interactor.SetViewSettings(settings);
         }

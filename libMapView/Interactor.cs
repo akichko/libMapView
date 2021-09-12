@@ -8,12 +8,12 @@ using libGis;
 
 namespace libMapView
 {
-    class Interactor
+    class Interactor : IInputBoundary
     {
         CmnMapMgr mapMgr;
         ViewParam viewParam;
-        //IOutputBoundary presenter;
-        Presenter presenter;
+        IOutputBoundary presenter;
+        //Presenter presenter;
 
         //動作設定
         public InteractorSettings settings;
@@ -27,13 +27,16 @@ namespace libMapView
         uint currentTileId;
         bool currentTileChanged = false;
 
+        LatLon selectedLatLon;
+
         /* 起動・設定・終了 ***********************************************/
 
-        public Interactor(IViewApi outputClass)
+        public Interactor(IOutputBoundary presenter)
         {
             viewParam = new ViewParam(35.4629, 139.62657, 1.0);
-            presenter = new Presenter(outputClass);
+            this.presenter = presenter;
         }
+
 
         public void OpenFile(string fileName, CmnMapMgr mapMgr)
         {
@@ -104,9 +107,9 @@ namespace libMapView
                     List<CmnTile> tileList = mapMgr.GetLoadedTileList();
                     foreach (CmnTile tile in tileList)
                     {
-                        TileXY offset = mapMgr.tileApi.CalcTileAbsOffset(centerTileId, tile.tileId);
+                        TileXY offset = mapMgr.tileApi.CalcTileAbsOffset(centerTileId, tile.TileId);
                         if (offset.x > settings.tileReleaseDistanceX || offset.y > settings.tileReleaseDistanceY)
-                            mapMgr.UnloadTile(tile.tileId);
+                            mapMgr.UnloadTile(tile.TileId);
                     }
 
                     currentTileChanged = false;
@@ -122,7 +125,8 @@ namespace libMapView
         {
             if (!drawEnable)
                 return;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange);
+            //CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
 
             if (selectedHdl == null)
             {
@@ -207,16 +211,46 @@ namespace libMapView
 
             //タイル読み込み・解放
             RefleshMapCache();
-            
+
             //描画対象タイルを特定
-            List<CmnTile> drawTileList = mapMgr.SearchTiles(mapMgr.tileApi.CalcTileId(viewParam.viewCenter), settings.tileDrawDistanceX, settings.tileDrawDistanceY);
+            uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
+            List<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
 
             //各タイルを描画
-            presenter.SetViewSettings(settings);
-            presenter.DrawTile(drawTileList, viewParam, settings.drawMapObjType, settings.drawMapSubType);
+            DrawTile(drawTileList, viewParam, settings.drawMapObjFilter);
 
             isPaintNeeded = false;
-            //presenter.drawMapLink(g, drawTileList, viewParam);
+        }
+
+
+        //描画メイン
+        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter)
+        {
+            //設定
+            presenter.SetViewSettings(settings);
+
+            //Graphics初期化
+            presenter.InitializeGraphics(viewParam);
+
+            //背景形状を描画
+            presenter.DrawBackGround();
+
+            //各タイルを描画
+            presenter.DrawMap(tileList, filter);
+
+            //タイル枠描画
+            presenter.DrawTileBorder(tileList);
+
+            //選択座標点追加描画
+            presenter.DrawPoint(selectedLatLon);
+
+            //ルート形状描画
+            presenter.DrawRouteGeometry();
+
+            //中心十字描画
+
+            //描画エリア更新
+            presenter.UpdateImage();
         }
 
         public void RefreshDrawArea()
@@ -227,18 +261,19 @@ namespace libMapView
 
         public void SetSelectedLatLon(LatLon latlon)
         {
-            presenter.selectedLatLon = latlon;
+            this.selectedLatLon = latlon;
+            presenter.SetSelectedLatLon(latlon);
             isPaintNeeded = true;
         }
 
         public void SetRouteGeometry(LatLon[] routeGeometry)
         {
-            presenter.routeGeometry = routeGeometry;
+            presenter.SetRouteGeometry(routeGeometry);
         }
 
         public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
         {
-            presenter.boundaryList = boundaryList;
+            presenter.SetBoundaryList(boundaryList);
         }
 
         public void SetClickedLatLon(LatLon clickedLatLon)
@@ -352,8 +387,9 @@ namespace libMapView
 
         public void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
-            CmnRouteMgr routeMgr = new CmnRouteMgr(mapMgr);
-
+            //CmnRouteMgr routeMgr = new CmnRouteMgr(mapMgr);
+            CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
+            
             routeMgr.orgLatLon = orgLatLon;
             routeMgr.dstLatLon = dstLatLon;
 
@@ -376,23 +412,62 @@ namespace libMapView
 
     public interface IInputBoundary
     {
+        void OpenFile(string fileName, CmnMapMgr mapMgr);
+        void Shutdown();
 
+        void CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
+        LatLon GetLatLon(int x, int y);
+        void MoveViewCenter(int x, int y);
+
+        void ChangeZoom(double v, int x, int y);
+        void Paint();
+        void RefreshDrawArea();
+
+        void SearchObject(LatLon baseLatLon);
+        CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
+        CmnObjHandle SearchObject(CmnSearchKey key);
+
+        void SetBoundaryGeometry(List<LatLon[]> boundaryList);
+        void SetClickedLatLon(LatLon clickedLatLon);
+        void SetDrawAreaSize(int width, int height);
+        void SetDrawInterface(CmnDrawApi drawApi);
+        void SetRouteGeometry(LatLon[] routeGeometry);
+        void SetSelectedAttr(CmnObjHandle attrObjHdl);
+        void SetSelectedLatLon(LatLon latlon);
+        void SetViewCenter(LatLon latlon);
+        void SetViewSettings(InteractorSettings settings);
     }
 
     public interface IOutputBoundary
     {
-        void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType, Dictionary<uint, UInt16> subType);
-      //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt32 objType, ViewParam viewParam);
-      //  void drawMapLink(Graphics g, List<CmnTile> tileList, ViewParam viewParam);
+        void SetDrawInterface(CmnDrawApi drawApi);
+        void SetViewSettings(InteractorSettings settings);
+     
+        //void DrawTile(List<CmnTile> tileList, ViewParam viewParam, UInt32 objType, Dictionary<uint, UInt16> subType);
+        //void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter);
+        //       void DrawTile(Graphics g, List<CmnTile> tileList, UInt32 objType, ViewParam viewParam);
+        //  void drawMapLink(Graphics g, List<CmnTile> tileList, ViewParam viewParam);
         void RefreshDrawArea();
+
         void UpdateCenterLatLon(LatLon latlon);
         void UpdateCenterTileId(uint tileId);
         void ShowAttribute(CmnObjHandle objHdl);
         void SetSelectedObjHdl(CmnObjHandle objHdl);
 
-        void SetDrawInterface(CmnDrawApi drawApi);
+        void SetSelectedAttr(CmnObjHandle selectedAttr);
+        void SetRelatedObj(List<CmnObjHdlRef> relatedHdlList);
+        void UpdateClickedLatLon(LatLon clickedLatLon);
 
-        //void DispDest(CmnObjHandle linkHdl);
+        void SetBoundaryList(List<LatLon[]> boundaryList);
+        void SetRouteGeometry(LatLon[] routeGeometry);
+        void SetSelectedLatLon(LatLon latlon);
+        void InitializeGraphics(ViewParam viewParam);
+        void DrawBackGround();
+        void DrawMap(List<CmnTile> tileList, CmnObjFilter filter);
+        void DrawTileBorder(List<CmnTile> tileList);
+        void DrawPoint(LatLon selectedLatLon);
+        void DrawRouteGeometry();
+        void UpdateImage();
     }
 
     public class InteractorSettings
@@ -410,23 +485,29 @@ namespace libMapView
         //描画
         public int tileDrawDistanceX = 2;
         public int tileDrawDistanceY = 1;
-        public UInt32 drawMapObjType = 0xffffffff;
        // public UInt16 drawLinkSubType = 0xffff;
         public bool isTileBorderDisp = true;
         public bool isOneWayDisp = false;
         public bool isAdminBoundaryDisp = true;
 
-        public Dictionary<UInt32, UInt16> drawMapSubType;
+        //public UInt32 drawMapObjType = 0xffffffff;
+        public CmnObjFilter drawMapObjFilter = null;
+        //public Dictionary<UInt32, UInt16> drawMapSubType;
 
         public InteractorSettings()
         {
+            drawMapObjFilter = new CmnObjFilter();
         }
 
         public void SetMapSubType(uint type, ushort subType)
         {
-            if(drawMapSubType == null)
-                drawMapSubType = new Dictionary<uint, ushort>();
-            drawMapSubType[type] = subType;
+            drawMapObjFilter = new CmnObjFilter();
+            drawMapObjFilter.AddRule(type, (new ListFilter<ushort>(false)).AddList(subType));
+
+
+            //if (drawMapSubType == null)
+            //    drawMapSubType = new Dictionary<uint, ushort>();
+            //drawMapSubType[type] = subType;
         }
     }
 
