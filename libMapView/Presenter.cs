@@ -98,13 +98,6 @@ namespace libMapView
             {
                 //各オブジェクト描画
                 drawTile.ExeDrawFunc(new CbGetObjFunc(CbDrawFunc), filter);
-
-                //タイル枠描画
-                //if (settings.isTileBorderDisp)
-                //{
-                //    drawApi.DrawObj(g, drawTile.ToCmnObjHandle(drawTile), viewParam);
-
-                //}
             }
         }
 
@@ -115,13 +108,6 @@ namespace libMapView
             {
                 tileList.ForEach(x=>drawApi.DrawObj(g, x.ToCmnObjHandle(x), viewParam));
             }
-            //foreach (CmnTile drawTile in tileList)
-            //{
-            //    if (settings.isTileBorderDisp)
-            //    {
-            //        drawApi.DrawObj(g, drawTile.ToCmnObjHandle(drawTile), viewParam);
-            //    }
-            //}
         }
 
         //座標点追加描画
