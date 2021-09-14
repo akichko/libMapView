@@ -276,7 +276,7 @@ namespace libMapView
         void DispClickedLatLon(LatLon latlon);
 
         //ログ出力
-        public void PrintLog(int logType, string logStr);
+        void PrintLog(int logType, string logStr);
 
 
         //ViewModel GetViewModel();
