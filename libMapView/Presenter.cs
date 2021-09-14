@@ -244,6 +244,11 @@ namespace libMapView
             this.selectedLatLon = latlon;
         }
 
+        public void PrintLog(int logType, string logStr)
+        {
+            viewAccess.PrintLog(logType, logStr);
+        }
+
 
         //public void DispDest(CmnObjHandle linkHdl)
         //{
@@ -269,6 +274,9 @@ namespace libMapView
         void DispCurrentTileId(uint tileId);
         void DispCenterLatLon(LatLon latlon);
         void DispClickedLatLon(LatLon latlon);
+
+        //ログ出力
+        public void PrintLog(int logType, string logStr);
 
 
         //ViewModel GetViewModel();
@@ -411,5 +419,30 @@ namespace libMapView
 
 
 
+    public class LogArray
+    {
+        string[] logStrArray;
+
+        public LogArray(int logNum)
+        {
+            logStrArray = new string[logNum];
+        }
+
+        public void UpdateLogStr(int logType, string logStr)
+        {
+            logStrArray[logType] = logStr;
+        }
+
+        public override string ToString()
+        {
+            string retStr = "";
+            for (int i = 0; i < logStrArray.Length; i++)
+            {
+                retStr += $"[{i}]{logStrArray[i]} ";
+            }
+
+            return retStr;
+        }
+    }
 
 }

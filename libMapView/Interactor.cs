@@ -47,6 +47,7 @@ namespace libMapView
 
             RefleshMapCache();
             drawEnable = true;
+            currentTileChanged = true;
             RefreshDrawArea();
         }
 
@@ -209,6 +210,8 @@ namespace libMapView
             if (!drawEnable || !isPaintNeeded)
                 return;
 
+            int timeS = Environment.TickCount;
+
             //タイル読み込み・解放
             RefleshMapCache();
 
@@ -219,6 +222,10 @@ namespace libMapView
             //各タイルを描画
             DrawTile(drawTileList, viewParam, settings.drawMapObjFilter);
 
+            int timeE = Environment.TickCount - timeS;
+
+            presenter.PrintLog(0, timeE.ToString());
+
             isPaintNeeded = false;
         }
 
@@ -226,17 +233,20 @@ namespace libMapView
         //描画メイン
         public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter)
         {
+            int timeS = Environment.TickCount;
             //設定
             presenter.SetViewSettings(settings);
 
             //Graphics初期化
             presenter.InitializeGraphics(viewParam);
+            int timeGInit = Environment.TickCount - timeS;
 
             //背景形状を描画
             presenter.DrawBackGround();
 
             //各タイルを描画
             presenter.DrawMap(tileList, filter);
+            int timeDrawMap = Environment.TickCount - timeS;
 
             //タイル枠描画
             presenter.DrawTileBorder(tileList);
@@ -251,6 +261,10 @@ namespace libMapView
 
             //描画エリア更新
             presenter.UpdateImage();
+            int timeUpdateImage = Environment.TickCount - timeS;
+
+
+            presenter.PrintLog(1, $"{timeGInit},{timeDrawMap},{timeUpdateImage}");
         }
 
         public void RefreshDrawArea()
@@ -320,11 +334,11 @@ namespace libMapView
         public void SetViewCenter(LatLon latlon)
         {
             viewParam.SetViewCenter(latlon);
-            // UpdateCurrentTileId();
+            UpdateCurrentTileId();
             //RefreshDrawArea();
 
             //if
-            currentTileChanged = true;
+            //currentTileChanged = true;
         }
 
         public void MoveViewCenter(LatLon relLatLon)
@@ -332,11 +346,11 @@ namespace libMapView
             viewParam.MoveViewCenter(relLatLon);
             //presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
             presenter.UpdateCenterLatLon(viewParam.viewCenter);
-            // UpdateCurrentTileId();
+            UpdateCurrentTileId();
             // RefreshDrawArea();
 
             //if
-            currentTileChanged = true;
+            //currentTileChanged = true;
         }
 
         public void MoveViewCenter(int x, int y)
@@ -344,11 +358,11 @@ namespace libMapView
             viewParam.MoveViewCenter(x, y);
             //presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
             presenter.UpdateCenterLatLon(viewParam.viewCenter);
-            //UpdateCurrentTileId();
+            UpdateCurrentTileId();
             //RefreshDrawArea();
 
             //if
-            currentTileChanged = true;
+            //currentTileChanged = true;
         }
 
         public void ChangeZoom(double delta, int x, int y)
@@ -373,7 +387,7 @@ namespace libMapView
 
         private void UpdateCurrentTileId()
         {
-            uint newTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
+            uint newTileId = mapMgr?.tileApi.CalcTileId(viewParam.viewCenter) ?? 0;
             if(currentTileId != newTileId)
             {
                 currentTileId = newTileId;
@@ -458,6 +472,7 @@ namespace libMapView
         void SetRelatedObj(List<CmnObjHdlRef> relatedHdlList);
         void UpdateClickedLatLon(LatLon clickedLatLon);
 
+        void PrintLog(int logType, string logStr);
         void SetBoundaryList(List<LatLon[]> boundaryList);
         void SetRouteGeometry(LatLon[] routeGeometry);
         void SetSelectedLatLon(LatLon latlon);
