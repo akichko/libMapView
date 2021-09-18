@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-using libGis;
+using Akichko.libGis;
 
-namespace libMapView
+namespace Akichko.libMapView
 {
     public class Controller
     {

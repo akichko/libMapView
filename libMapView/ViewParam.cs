@@ -4,22 +4,61 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-using libGis;
+using Akichko.libGis;
 
-namespace libMapView
+namespace Akichko.libMapView
 {
     public class ViewParam
     {
+
         public LatLon viewCenter;
 
-        public double zoom; // dot/m
+        double zoom; // dot/m
         public int zoomLevel;
 
-        public int width;
-        public int height;
+        private int width;
+        private int height;
+
+        //計算で生成
+        float width_2;
+        float height_2;
+
+
+        public int Width {
+            get { return width; }
+            set {
+                width = value;
+                width_2 = (float)(width / 2.0);
+            }
+        }
+        public int Height {
+            get { return height; }
+            set {
+                height = value;
+                height_2 = (float)(height / 2.0);
+            }
+        }
+        public double Zoom
+        {
+            get { return zoom; }
+            set
+            {
+                zoom = value;
+                dotPerLon = mPerLon * zoom;
+                dotPerLat = mPerLat * zoom;
+            }
+        }
+
+        public float Width_2 => width_2;
+        public float Height_2 => height_2;
 
         double mPerLon; // 1 => m/lon
         double mPerLat; // m/lon
+
+        //work
+        double dotPerLon;
+        double dotPerLat;
+
 
         public ViewParam(double lat, double lon, double zoom)
         {
@@ -29,15 +68,21 @@ namespace libMapView
             CalcMPerLatLon();
         }
 
-        public double GetDotPerLon()
+        public void SetWidthHeight(int width, int height)
         {
-            return zoom * mPerLon;
+            this.Width = width;
+            this.Height = height;
         }
 
-        public double GetDotPerLat()
-        {
-            return zoom * mPerLat;
-        }
+        public double GetDotPerLon() => dotPerLon;
+        //{
+        //    return zoom * mPerLon;
+        //}
+
+        public double GetDotPerLat() => dotPerLat;
+        //{
+        //    return zoom * mPerLat;
+        //}
 
         public LatLon GetLatLon(int offsetX, int offsetY)
         {
@@ -109,6 +154,9 @@ namespace libMapView
         {
             mPerLon = viewCenter.GetDistanceTo(new LatLon(viewCenter.lat, viewCenter.lon + 1.0));
             mPerLat = viewCenter.GetDistanceTo(new LatLon(viewCenter.lat + 1.0, viewCenter.lon));
+
+            dotPerLon = mPerLon * zoom;
+            dotPerLat = mPerLat * zoom;
 
         }
 

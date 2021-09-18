@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.ComponentModel;
-using libGis;
+using Akichko.libGis;
 
-namespace libMapView
+namespace Akichko.libMapView
 {
     public class Presenter : IOutputBoundary
     {
@@ -335,7 +335,7 @@ namespace libMapView
 
             Pen pen = GetPen(objHdl);
             g.DrawLines(pen, pointF);
-
+            pen.Dispose();
             return;
         }
     
@@ -398,7 +398,9 @@ namespace libMapView
             double relLat = latlon.lat - viewParam.viewCenter.lat;
             double relLon = latlon.lon - viewParam.viewCenter.lon;
 
-            return new PointF((float)(viewParam.width / 2.0 + relLon * viewParam.GetDotPerLon()), (float)(viewParam.height / 2.0 - relLat * viewParam.GetDotPerLat()));
+            return new PointF(
+                (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
+                (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
 
         }
 

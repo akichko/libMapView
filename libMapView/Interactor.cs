@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
-using libGis;
+using Akichko.libGis;
 
-namespace libMapView
+namespace Akichko.libMapView
 {
     class Interactor : IInputBoundary
     {
@@ -83,7 +83,7 @@ namespace libMapView
 
                     foreach (uint tileId in tileList)
                     {
-                        mapMgr.LoadTile(tileId);
+                        mapMgr.LoadTile(tileId, null);
                     }
 
                     isAllTileLoaded = true;
@@ -101,11 +101,11 @@ namespace libMapView
 
                     foreach (uint tileId in tileIdList)
                     {
-                        mapMgr.LoadTile(tileId);
+                        mapMgr.LoadTile(tileId, null);
                     }
                     //遠くの地図をアンロード
 
-                    List<CmnTile> tileList = mapMgr.GetLoadedTileList();
+                    IEnumerable<CmnTile> tileList = mapMgr.GetLoadedTileList();
                     foreach (CmnTile tile in tileList)
                     {
                         TileXY offset = mapMgr.tileApi.CalcTileAbsOffset(centerTileId, tile.TileId);
@@ -214,19 +214,39 @@ namespace libMapView
 
             //タイル読み込み・解放
             RefleshMapCache();
+            int timeRefleshCache = Environment.TickCount - timeS;
 
             //描画対象タイルを特定
             uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
-            List<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
+            IEnumerable<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
+
+            //描画エリア内タイル抽出（隣接１メッシュ）
+            TileXYL xylNW = mapMgr.tileApi.CalcTileXYL(GetLatLon(0,0));
+            TileXYL xylSE = mapMgr.tileApi.CalcTileXYL(GetLatLon(viewParam.Width, viewParam.Height));
+
+            List<CmnTile> drawTileList2 = drawTileList
+                .Where(x => CheckInDrawArea(x.TileId, xylNW, xylSE, 0))
+                .ToList();
+
 
             //各タイルを描画
-            DrawTile(drawTileList, viewParam, settings.drawMapObjFilter);
+            DrawTile(drawTileList2, viewParam, settings.drawMapObjFilter);
 
             int timeE = Environment.TickCount - timeS;
 
-            presenter.PrintLog(0, timeE.ToString());
+            presenter.PrintLog(0, $"{timeRefleshCache},{timeE}");
 
             isPaintNeeded = false;
+        }
+
+        bool CheckInDrawArea(uint tileId, TileXYL xylNW, TileXYL xylSE, int range)
+        {
+            TileXYL xyl = mapMgr.tileApi.CalcTileXYL(tileId);
+
+            if (xyl.x < xylNW.x - range || xyl.x > xylSE.x + range || xyl.y < xylSE.y - range || xyl.y > xylNW.y + range)
+                return false;
+            else
+                return true;
         }
 
 
@@ -310,8 +330,8 @@ namespace libMapView
 
         public LatLon GetLatLon(int x, int y) //描画エリアのXY→緯度経度
         {
-            int offsetX = x - viewParam.width / 2;
-            int offsetY = y - viewParam.height / 2;
+            int offsetX = x - viewParam.Width / 2;
+            int offsetY = y - viewParam.Height / 2;
 
             return viewParam.GetLatLon(offsetX, offsetY);
 
@@ -327,8 +347,8 @@ namespace libMapView
 
         public void SetDrawAreaSize(int width, int height)
         {
-            viewParam.width = width;
-            viewParam.height = height;
+            viewParam.Width = width;
+            viewParam.Height = height;
         }
 
         public void SetViewCenter(LatLon latlon)
@@ -370,7 +390,7 @@ namespace libMapView
 
             LatLon clickedLatLon = GetLatLon(x, y);
 
-            viewParam.zoom *= delta;
+            viewParam.Zoom *= delta;
 
             LatLon afterLatLon = GetLatLon(x, y);
 
