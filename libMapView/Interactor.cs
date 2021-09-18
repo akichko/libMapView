@@ -149,7 +149,7 @@ namespace Akichko.libMapView
         {
             if (!drawEnable)
                 return;
-            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange);
+            CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange, settings.timeStamp);
             //CmnObjHandle selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, true, settings.drawMapObjType);
 
             if (selectedHdl == null)
@@ -543,14 +543,17 @@ namespace Akichko.libMapView
         //描画
         public int tileDrawDistanceX = 2;
         public int tileDrawDistanceY = 1;
-       // public UInt16 drawLinkSubType = 0xffff;
         public bool isTileBorderDisp = true;
         public bool isOneWayDisp = false;
         public bool isAdminBoundaryDisp = true;
 
+        //フィルタ
         //public UInt32 drawMapObjType = 0xffffffff;
         public CmnObjFilter drawMapObjFilter = null;
         //public Dictionary<UInt32, UInt16> drawMapSubType;
+        // public UInt16 drawLinkSubType = 0xffff;
+
+        public int timeStamp;
 
         public InteractorSettings()
         {
