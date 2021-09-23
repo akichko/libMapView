@@ -152,10 +152,12 @@ namespace Akichko.libMapView
         public void LeftClick(int x, int y)
         {
             LatLon clickedLatLon = interactor.GetLatLon(x, y);
-            //SearchObject(clickedLatLon);
-            interactor.SearchObject(clickedLatLon);
+            CmnObjHandle nearestObj = interactor.SearchObject(clickedLatLon);
+
+            PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj.Geometry);
 
             interactor.SetClickedLatLon(clickedLatLon);
+            interactor.SetNearestLatLon(nearestPos.latLon);
             RefreshDrawArea();
         }
 
@@ -164,11 +166,6 @@ namespace Akichko.libMapView
 
         }
 
-        //private void SearchObject(LatLon clickedLatLon)
-        //{
-        //    interactor.SearchObject(clickedLatLon);
-        //    RefreshDrawArea();
-        //}
 
 
         //属性表示
@@ -214,9 +211,8 @@ namespace Akichko.libMapView
 
         public void SelectAttribute(CmnSearchKey key)
         {
-            CmnObjHandle attrObjHdl = interactor.SearchObject(key);
+            CmnObjHandle attrObjHdl = interactor.SearchAttrObject(key);
             interactor.SetSelectedAttr(attrObjHdl);
-
         }
 
 

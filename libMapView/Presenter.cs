@@ -51,8 +51,6 @@ namespace Akichko.libMapView
             }
         }
 
-        //ViewParam viewParam;
-
         public LatLon selectedLatLon;
         public LatLon[] routeGeometry = null;
         public List<LatLon[]> boundaryList = null;
@@ -64,7 +62,6 @@ namespace Akichko.libMapView
 
         public Presenter(IViewApi mainForm)
         {
-            //this.mainForm = (Form1)mainForm;
             viewAccess = (IViewApi)mainForm;
             //drawTool = new DrawTool();
         }
@@ -107,22 +104,25 @@ namespace Akichko.libMapView
         }
 
         //地図描画
-        public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter)
-        {
-            //各タイルを描画
+        //public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp)
+        //{
+        //    //各タイルを描画
 
-            //コールバック用ローカル関数定義
-            int CbDrawFunc(CmnObjHandle objHdl)
-            {
-                return DrawMapObj(g, objHdl, viewParam);
-            }
+        //    //コールバック用ローカル関数定義
+        //    int CbDrawFunc(CmnObjHandle objHdl)
+        //    {
+        //        if (objHdl.obj.CheckTimeStamp(timeStamp))
+        //            return DrawMapObj(objHdl, viewParam);
+        //        else
+        //            return 0;
+        //    }
 
-            foreach (CmnTile drawTile in tileList)
-            {
-                //各オブジェクト描画
-                drawTile.ExeDrawFunc(new CbGetObjFunc(CbDrawFunc), filter);
-            }
-        }
+        //    foreach (CmnTile drawTile in tileList)
+        //    {
+        //        //各オブジェクト描画
+        //        drawTile.ExeDrawFunc(new CbGetObjFunc(CbDrawFunc), filter);
+        //    }
+        //}
 
         //タイル枠描画
         public void DrawTileBorder(List<CmnTile> tileList)
@@ -136,7 +136,7 @@ namespace Akichko.libMapView
         //座標点追加描画
         public void DrawPoint(LatLon latlon)
         {
-            drawApi.DrawPoint(g, selectedLatLon, viewParam);
+            drawApi.DrawPoint(g, latlon, viewParam);
         }
 
         //経路計算結果描画
@@ -155,34 +155,7 @@ namespace Akichko.libMapView
         }
 
 
-        //描画メイン
-        //public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter)
-        //{
-        //    //Graphics初期化
-        //    InitializeGraphics(viewParam);
-
-        //    //背景形状を描画
-        //    DrawBackGround();
-
-        //    //各タイルを描画
-        //    DrawMap(tileList, filter);
-
-        //    //タイル枠描画
-        //    DrawTileBorder(tileList);
-
-        //    //選択座標点追加描画
-        //    DrawPoint(selectedLatLon);
-
-        //    //ルート形状描画
-        //    DrawRouteGeometry();
-
-        //    //中心十字描画
-
-        //    //描画エリア更新
-        //    UpdateImage();
-        //}
-
-        public int DrawMapObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
+        public int DrawMapObj(CmnObjHandle objHdl, ViewParam viewParam)
         {
             drawApi.DrawObj(g, objHdl, viewParam);
 
@@ -252,6 +225,11 @@ namespace Akichko.libMapView
             viewAccess.DispClickedLatLon(latlon);
         }
 
+        public void SetNearestLatLon(LatLon latlon)
+        {
+            //viewAccess.DispClickedLatLon(latlon);
+        }
+
         public void SetBoundaryList(List<LatLon[]> boundaryList)
         {
             this.boundaryList = boundaryList;
@@ -262,10 +240,10 @@ namespace Akichko.libMapView
             this.routeGeometry = routeGeometry;
         }
 
-        public void SetSelectedLatLon(LatLon latlon)
-        {
-            this.selectedLatLon = latlon;
-        }
+        //public void SetSelectedLatLon(LatLon latlon)
+        //{
+        //    this.selectedLatLon = latlon;
+        //}
 
         public void PrintLog(int logType, string logStr)
         {
