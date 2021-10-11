@@ -34,9 +34,9 @@ namespace Akichko.libMapView
 {
     public class Presenter : IOutputBoundary
     {
-        IViewApi viewAccess;
-        CmnDrawApi drawApi;
-        ViewParam viewParam;
+        protected IViewApi viewAccess;
+        protected CmnDrawApi drawApi;
+        protected ViewParam viewParam;
 
         Bitmap drawAreaBitmap;
         Graphics g;
@@ -51,7 +51,7 @@ namespace Akichko.libMapView
             }
         }
 
-        public LatLon selectedLatLon;
+        //public LatLon selectedLatLon;
         public LatLon[] routeGeometry = null;
         public List<LatLon[]> boundaryList = null;
 
@@ -63,7 +63,6 @@ namespace Akichko.libMapView
         public Presenter(IViewApi mainForm)
         {
             viewAccess = (IViewApi)mainForm;
-            //drawTool = new DrawTool();
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -171,14 +170,12 @@ namespace Akichko.libMapView
 
         public void ShowAttribute(CmnObjHandle objHdl)
         {
-            //objHdl = objHdl.obj.ToCmnObjHandle(objHdl.tile);
             viewAccess.DispListView(objHdl.GetAttributeListItem());
-           // viewAccess.DispListView(objHdl.obj.GetAttributeListItem(objHdl.tile));
-
         }
 
-        public void SetSelectedObjHdl(CmnObjHandle objHdl)
+        public void SetSelectedObjHdl(CmnObjHandle objHdl, PolyLinePos nearestPos = null)
         {
+            viewAccess.DispSelectedObjHdl(objHdl, nearestPos);
             drawApi.selectObjHdl = objHdl;
         }
 
@@ -250,6 +247,11 @@ namespace Akichko.libMapView
             viewAccess.PrintLog(logType, logStr);
         }
 
+        public void OutputRoute(IEnumerable<CmnObjHandle> route)
+        {
+            viewAccess.DispRoute(route.ToList());
+        }
+
 
         //public void DispDest(CmnObjHandle linkHdl)
         //{
@@ -261,20 +263,21 @@ namespace Akichko.libMapView
 
     public interface IViewApi
     {
-    //    Graphics GetDrawAreaGraphics();
-    //    void SetDrawAreaImage(Bitmap bmp);
 
         //描画エリア
         void UpdateImage(Image newImage);
         void RefreshDrawArea();
 
-        //属性表示
+        //選択オブジェクト属性
         void DispListView(List<AttrItemInfo> listItem);
+        void DispSelectedObjHdl(CmnObjHandle objHdl, PolyLinePos nearestPos);
 
-        //ステータスバー
+        //パラメータ表示
         void DispCurrentTileId(uint tileId);
         void DispCenterLatLon(LatLon latlon);
         void DispClickedLatLon(LatLon latlon);
+
+        void DispRoute(List<CmnObjHandle> route);
 
         //ログ出力
         void PrintLog(int logType, string logStr);
@@ -288,11 +291,45 @@ namespace Akichko.libMapView
         //void DispDest(string destStr);
     }
 
-    public class ViewModel : INotifyPropertyChanged
+    public class ViewModel
+    {
+        //PictureBox
+        Image pbDrawAreaImage;
+
+        //StatusBar
+        int centerTileId;
+        LatLon clickedLatLon;
+
+        private LatLon _centerLatLon;
+
+
+        public LatLon centerLatLon
+        {
+            get{ return _centerLatLon; }
+
+            set
+            {
+                _centerLatLon = value;
+
+            }
+        }
+
+    }
+
+    public class ViewModel2 : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        //PictureBox
+        Image pbDrawAreaImage;
+
+        //StatusBar
+        int centerTileId;
+        LatLon clickedLatLon;
+
         private LatLon _centerLatLon;
+
+
         public LatLon centerLatLon
         {
             get
@@ -306,8 +343,6 @@ namespace Akichko.libMapView
             }
         }
 
-        int centerTileId;
-        Image pbDrawAreaImage;
     }
 
 
@@ -318,7 +353,7 @@ namespace Akichko.libMapView
         public CmnObjHandle selectObjHdl = null;
         public CmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
-        public LatLon selectPoint;
+        //public LatLon selectPoint;
         //public List<CmnDirObjHandle> routeObjList = null;
 
         public InteractorSettings settings;

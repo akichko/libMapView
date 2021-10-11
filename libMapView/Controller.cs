@@ -33,15 +33,16 @@ namespace Akichko.libMapView
 {
     public class Controller
     {
-        private IInputBoundary interactor;
+        protected IInputBoundary interactor;
 
         /* 初期設定 **********************************************************/
 
-        public Controller(IViewApi outputClass, InteractorSettings settings)
+        public Controller(IInputBoundary interactor)
         {
-            interactor = new Interactor(new Presenter(outputClass));
-            interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
-            interactor.SetViewSettings(settings);
+            this.interactor = interactor;
+            //this.interactor = new Interactor(new Presenter(outputClass));
+            this.interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
+            //this.interactor.SetViewSettings(settings);
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -154,10 +155,10 @@ namespace Akichko.libMapView
             LatLon clickedLatLon = interactor.GetLatLon(x, y);
             CmnObjHandle nearestObj = interactor.SearchObject(clickedLatLon);
 
-            PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj.Geometry);
+            //PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj?.Geometry);
 
             interactor.SetClickedLatLon(clickedLatLon);
-            interactor.SetNearestLatLon(nearestPos.latLon);
+            //interactor.SetNearestObj(nearestPos);
             RefreshDrawArea();
         }
 
