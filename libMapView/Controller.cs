@@ -28,6 +28,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using Akichko.libGis;
+using System.IO;
 
 namespace Akichko.libMapView
 {
@@ -186,7 +187,7 @@ namespace Akichko.libMapView
         public void SearchObject(uint tileId, uint objType, UInt16 objIndex)
         {
             CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
-            if(searchedObjHdl != null)
+            if (searchedObjHdl != null)
             {
                 LatLon latlon = searchedObjHdl.GetCenterLatLon();
                 if (latlon != null)
@@ -220,6 +221,45 @@ namespace Akichko.libMapView
         public void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
             interactor.CalcRoute(orgLatLon, dstLatLon);
+        }
+
+        public void ReadBackground(StreamReader sr)
+        {
+
+            List<LatLon[]> BoundaryList = new List<LatLon[]>();
+
+            string fbuf;
+            string sWayId;
+            int shapeNo;
+            double lon;
+            double lat;
+
+            List<LatLon> geometryList = new List<LatLon>();
+
+            //データ数読み込み
+            while ((fbuf = sr.ReadLine()) != null)
+            {
+                string[] csv_column = fbuf.Split('\t');
+
+                //TSVformat
+                int row = 0;
+                sWayId = csv_column[row++];
+                shapeNo = int.Parse(csv_column[row++]);
+                lon = double.Parse(csv_column[row++]);
+                lat = double.Parse(csv_column[row++]);
+
+                LatLon tmpLatLon = new LatLon(lat, lon);
+                geometryList.Add(tmpLatLon);
+
+                if (shapeNo == 99999)
+                {
+                    BoundaryList.Add(geometryList.ToArray());
+                    geometryList = new List<LatLon>();
+                }
+            }
+
+            SetBoundaryGeometry(BoundaryList);
+            RefreshDrawArea();
         }
     }
 }
