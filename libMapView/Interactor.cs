@@ -156,6 +156,8 @@ namespace Akichko.libMapView
                 return null;
 
             selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange, settings.timeStamp);
+            if (selectedHdl == null)
+                return null;
 
             PolyLinePos nearestPos = LatLon.CalcNearestPoint(baseLatLon, selectedHdl?.Geometry);
 
@@ -476,7 +478,7 @@ namespace Akichko.libMapView
         /* その他 ***********************************************/
 
 
-        public virtual void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
             CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
 
@@ -489,12 +491,18 @@ namespace Akichko.libMapView
             //計算
             RouteResult routeCalcResult = routeMgr.CalcRoute();
 
+            if (routeCalcResult.resultCode != ResultCode.Success)
+            {
+                SetRouteGeometry(null);
+                return routeCalcResult;
+            }
+
             route = routeCalcResult.route.Select(x => x.DLinkHdl);
             presenter.OutputRoute(route);
 
             SetRouteGeometry(routeMgr.GetResult());
 
-            return;
+            return routeCalcResult;
         }
 
 
@@ -535,7 +543,7 @@ namespace Akichko.libMapView
         CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
         CmnObjHandle SearchObject(CmnSearchKey key);
         CmnObjHandle SearchAttrObject(CmnSearchKey key);
-        void CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
+        RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
 
         //属性取得
         LatLon GetLatLon(int x, int y);

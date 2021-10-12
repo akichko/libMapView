@@ -218,9 +218,9 @@ namespace Akichko.libMapView
         }
 
 
-        public void CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        public RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
-            interactor.CalcRoute(orgLatLon, dstLatLon);
+            return interactor.CalcRoute(orgLatLon, dstLatLon);
         }
 
         public void ReadBackground(StreamReader sr)
