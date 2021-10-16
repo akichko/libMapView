@@ -36,7 +36,7 @@ namespace Akichko.libMapView
     {
         protected IViewApi viewAccess;
         protected CmnDrawApi drawApi;
-        protected ViewParam viewParam;
+       // protected ViewParam viewParam;
 
         Bitmap drawAreaBitmap;
         Graphics g;
@@ -85,11 +85,25 @@ namespace Akichko.libMapView
         {
             drawAreaBitmap = viewParam.CreateBitmap();
             g = Graphics.FromImage(drawAreaBitmap);
-            this.viewParam = viewParam;
+            //this.viewParam = viewParam;
+        }
+
+        //タイルリスト
+        public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam)
+        {
+            //各タイルを描画
+            foreach (CmnTile drawTile in tileList)
+            {
+                drawTile.GetObjGroupList(filter)
+                    .Where(x => x.isDrawable)
+                    .SelectMany(x => x.GetIEnumerableDrawObjs(filter?.GetSubFilter(x.Type)))
+                    .Where(x=>x != null) //必要？
+                    ?.ForEach(x => DrawMapObj(x.ToCmnObjHandle(drawTile), viewParam));
+            }
         }
 
         //背景
-        public void DrawBackGround()
+        public void DrawBackGround(ViewParam viewParam)
         {
             //背景形状を描画
             if (boundaryList != null && settings.isAdminBoundaryDisp)
@@ -124,7 +138,7 @@ namespace Akichko.libMapView
         //}
 
         //タイル枠描画
-        public void DrawTileBorder(List<CmnTile> tileList)
+        public void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam)
         {
             if (settings.isTileBorderDisp)
             {
@@ -133,13 +147,13 @@ namespace Akichko.libMapView
         }
 
         //座標点追加描画
-        public void DrawPoint(LatLon latlon)
+        public void DrawPoint(LatLon latlon, ViewParam viewParam)
         {
             drawApi.DrawPoint(g, latlon, viewParam);
         }
 
         //経路計算結果描画
-        public void DrawRouteGeometry()
+        public void DrawRouteGeometry(ViewParam viewParam)
         {
             //ルート形状描画
             Pen pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
@@ -291,6 +305,12 @@ namespace Akichko.libMapView
         //void DispDest(string destStr);
     }
 
+    public enum LatLonType
+    {
+        ViewCenter,
+        Clicked
+    }
+
     public class ViewModel
     {
         //PictureBox
@@ -357,12 +377,8 @@ namespace Akichko.libMapView
         //public List<CmnDirObjHandle> routeObjList = null;
 
         public InteractorSettings settings;
-        //public bool isDrawOneWay = true;
 
         /* 描画 ==================================================================================*/
-
-        //public LatLon[] routeGeometry = null;
-
 
         //オブジェクト描画
         public virtual void DrawObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
@@ -447,7 +463,7 @@ namespace Akichko.libMapView
 
 
 
-        public virtual RangeFilter<ushort> GetFilter(uint number) => null;
+        //public virtual RangeFilter<ushort> GetFilter(uint number) => null;
 
         public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
         {

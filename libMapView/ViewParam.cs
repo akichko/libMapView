@@ -91,6 +91,8 @@ namespace Akichko.libMapView
             CalcMPerLatLon();
         }
 
+
+
         public void SetWidthHeight(int width, int height)
         {
             this.Width = width;
@@ -107,7 +109,19 @@ namespace Akichko.libMapView
         //    return zoom * mPerLat;
         //}
 
-        public LatLon GetLatLon(int offsetX, int offsetY)
+
+
+        public LatLon GetLatLon(int x, int y) //描画エリアのXY→緯度経度
+        {
+            int offsetX = x - Width / 2;
+            int offsetY = y - Height / 2;
+
+            return GetOffsetLatLon(offsetX, offsetY);
+
+        }
+
+
+        public LatLon GetOffsetLatLon(int offsetX, int offsetY)
         {
             //XYを緯度経度に変換
             LatLon tmpLatLon = new LatLon();
@@ -116,6 +130,38 @@ namespace Akichko.libMapView
 
             return tmpLatLon;
         }
+
+        
+
+        public LatLon GetDrawAreaRectPos(ERectPos pos)
+        {
+            switch (pos)
+            {
+                case ERectPos.SouthWest:
+
+                    return GetLatLon( 0, Height);
+
+                case ERectPos.SouthEast:
+
+                    return GetLatLon(Width, Height);
+
+                case ERectPos.NorthWest:
+
+                    return GetLatLon(0, 0);
+
+                case ERectPos.NorthEast:
+
+                    return GetLatLon(Width, 0);
+
+                case ERectPos.Center:
+
+                    return viewCenter;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
 
         public void SetViewCenter(LatLon latlon)
         {
