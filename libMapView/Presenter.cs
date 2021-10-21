@@ -96,8 +96,9 @@ namespace Akichko.libMapView
             {
                 drawTile.GetObjGroupList(filter)
                     .Where(x => x.isDrawable)
-                    .SelectMany(x => x.GetIEnumerableDrawObjs(filter?.GetSubFilter(x.Type)))
-                    .Where(x=>x != null) //必要？
+                    .Select(x => x.GetIEnumerableDrawObjs(filter?.GetSubFilter(x.Type)))
+                    .Where(x=>x != null)
+                    .SelectMany(x=>x)
                     ?.ForEach(x => DrawMapObj(x.ToCmnObjHandle(drawTile), viewParam));
             }
         }
@@ -414,12 +415,15 @@ namespace Akichko.libMapView
             PointF pointF = CalcPointInDrawArea(latlon, viewParam);
 
             //色は暫定
-            float width = 6;
-            g.FillEllipse(new SolidBrush(Color.DodgerBlue), pointF.X - width, pointF.Y - width, width*2, width*2);
-            width = 3;
-            g.FillEllipse(new SolidBrush(Color.Yellow), pointF.X - width, pointF.Y - width, width * 2, width * 2);
+            DrawFillCircle(g, pointF, new SolidBrush(Color.DodgerBlue), 6);
+            DrawFillCircle(g, pointF, new SolidBrush(Color.Yellow), 3);
+            //float width = 6;
+            //g.FillEllipse(new SolidBrush(Color.DodgerBlue), pointF.X - width, pointF.Y - width, width*2, width*2);
+            //width = 3;
+            //g.FillEllipse(new SolidBrush(Color.Yellow), pointF.X - width, pointF.Y - width, width * 2, width * 2);
 
         }
+
 
         public void DrawPolyline(Graphics g, LatLon[] polyline, Pen pen, ViewParam viewParam)
         {
@@ -427,7 +431,11 @@ namespace Akichko.libMapView
                 return;
             PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
 
-            g.DrawLines(pen, pointF);
+            if(polyline.Length == 1)
+                g.DrawLines(pen, pointF);
+            else
+                g.DrawLines(pen, pointF);
+
             return;
         }
 
@@ -443,6 +451,9 @@ namespace Akichko.libMapView
             g.DrawLines(pen, pointF);
             return;
         }
+
+        protected virtual void DrawFillCircle(Graphics g, PointF pointF, SolidBrush brush, float radius)
+            => g.FillEllipse(brush, pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
 
         protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
         {
@@ -465,10 +476,10 @@ namespace Akichko.libMapView
 
         //public virtual RangeFilter<ushort> GetFilter(uint number) => null;
 
-        public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
-        {
-            return filter.AddRule(objType, subFilter);
-        }
+        //public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
+        //{
+        //    return filter.AddRule(objType, subFilter);
+        //}
     }
 
 

@@ -244,6 +244,7 @@ namespace Akichko.libMapView
         {
             if (!drawEnable || !isPaintNeeded)
                 return 0;
+            isPaintNeeded = false;
 
             int timeS = Environment.TickCount;
 
@@ -268,15 +269,13 @@ namespace Akichko.libMapView
             //task.Wait();
 
             //各タイルを描画
-            isPaintNeeded = false;
             DrawTile(drawTileList2, viewParam, settings.drawMapObjFilter, settings.timeStamp);
 
             int timeE = Environment.TickCount - timeS;
 
             presenter.PrintLog(0, $"{timeRefreshCache},{timeE}");
 
-            //await task;
-            //RefreshDrawArea();           
+            await task;
 
             return 0;
         }
