@@ -36,7 +36,7 @@ namespace Akichko.libMapView
     {
         protected IViewApi viewAccess;
         protected CmnDrawApi drawApi;
-       // protected ViewParam viewParam;
+        // protected ViewParam viewParam;
 
         //Bitmap drawAreaBitmap;
         //Graphics g;
@@ -45,7 +45,8 @@ namespace Akichko.libMapView
         public InteractorSettings Settings
         {
             get => settings;
-            set {
+            set
+            {
                 settings = value;
                 drawApi.settings = value;
             }
@@ -90,7 +91,7 @@ namespace Akichko.libMapView
         }
 
         //タイルリスト
-        public void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam)
+        public void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp)
         {
             //各タイルを描画
             foreach (CmnTile drawTile in tileList)
@@ -98,8 +99,9 @@ namespace Akichko.libMapView
                 drawTile.GetObjGroupList(filter)
                     .Where(x => x.isDrawable)
                     .Select(x => x.GetIEnumerableDrawObjs(filter?.GetSubFilter(x.Type)))
-                    .Where(x=>x != null)
-                    .SelectMany(x=>x)
+                    .Where(x => x != null)
+                    .SelectMany(x => x)
+                    .Where(x => x.CheckTimeStamp(timeStamp))
                     ?.ForEach(x => DrawMapObj(x.ToCmnObjHandle(drawTile), viewParam));
             }
         }
@@ -122,14 +124,14 @@ namespace Akichko.libMapView
         {
             if (settings.isTileBorderDisp)
             {
-                tileList.ForEach(x=>drawApi.DrawObj(x.ToCmnObjHandle(x), viewParam));
+                tileList.ForEach(x => drawApi.DrawObj(x.ToCmnObjHandle(x), viewParam));
             }
         }
 
         //座標点追加描画
         public void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None)
         {
-            switch(type)
+            switch (type)
             {
                 case PointType.Clicked:
                     drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.Yellow, 3), viewParam);
@@ -165,7 +167,7 @@ namespace Akichko.libMapView
         //ルート形状描画
         public void DrawRouteGeometry(LatLon[] polyline, ViewParam viewParam)
         {
-            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96,255,0,0),20, true), viewParam);
+            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96, 255, 0, 0), 20, true), viewParam);
         }
 
         //描画エリア中心＋描画
@@ -367,7 +369,7 @@ namespace Akichko.libMapView
             pen.Dispose();
             return;
         }
-    
+
         //デフォルト描画スタイル
         public virtual Pen GetPen(CmnObjHandle objHdl)
         {
@@ -391,7 +393,7 @@ namespace Akichko.libMapView
                 return;
             PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
 
-            if(polyline.Length == 1)
+            if (polyline.Length == 1)
                 g.DrawLines(pen, pointF);
             else
                 g.DrawLines(pen, pointF);
@@ -402,7 +404,7 @@ namespace Akichko.libMapView
         public void DrawPolyline(LatLon[] polyline, LineStyle style, ViewParam viewParam)
         {
             Pen pen = new Pen(style.color, style.width);
-            if(style.isArrowEndCap)
+            if (style.isArrowEndCap)
                 pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
 
             DrawPolyline(polyline, pen, viewParam);
@@ -527,7 +529,7 @@ namespace Akichko.libMapView
 
 
     /* 不要？ ************************************************************/
-  
+
     public class ViewModel
     {
         //PictureBox

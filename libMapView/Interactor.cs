@@ -292,7 +292,7 @@ namespace Akichko.libMapView
 
 
         //描画メイン
-        public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, int timeStamp)
+        public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp)
         {
             int timeS = Environment.TickCount;
             //設定
@@ -306,7 +306,7 @@ namespace Akichko.libMapView
             presenter.DrawBackGround(viewParam);
 
             //各タイルを描画
-            presenter.DrawTiles(tileList, filter, timeStamp, viewParam);
+            presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
             int timeDrawMap = Environment.TickCount - timeS;
 
             //タイル枠描画
@@ -523,7 +523,7 @@ namespace Akichko.libMapView
         //地図描画
         void InitializeGraphics(ViewParam viewParam);
         void DrawBackGround(ViewParam viewParam);
-        void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam);
+        void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp);
         void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam);
         void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None);
         void DrawRouteGeometry(LatLon[] routeGeometry, ViewParam viewParam);
@@ -572,7 +572,7 @@ namespace Akichko.libMapView
         //フィルタ
         public CmnObjFilter drawMapObjFilter = null;
 
-        public int timeStamp;
+        public long timeStamp;
 
         public InteractorSettings()
         {
