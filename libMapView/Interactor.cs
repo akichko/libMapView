@@ -58,6 +58,7 @@ namespace Akichko.libMapView
         protected LatLon clickedLatLon;
         protected LatLon nearestLatLon;
         protected IEnumerable<CmnObjHandle> route;
+        private LatLon[] routeGeometry;
 
         /* 起動・設定・終了 ***********************************************/
 
@@ -109,6 +110,7 @@ namespace Akichko.libMapView
             {
                 if (!isAllTileLoaded)
                 {
+                    isAllTileLoaded = true;
 
                     //全地図データロード
                     List<uint> tileList = mapMgr.GetMapTileIdList();
@@ -117,7 +119,6 @@ namespace Akichko.libMapView
                     {
                         mapMgr.LoadTile(tileId, null);
                     }
-                    isAllTileLoaded = true;
                 }
             }
             else
@@ -269,10 +270,9 @@ namespace Akichko.libMapView
             //task.Wait();
 
             //各タイルを描画
-            DrawTile(drawTileList2, viewParam, settings.drawMapObjFilter, settings.timeStamp);
+            DrawMap(drawTileList2, viewParam, settings.drawMapObjFilter, settings.timeStamp);
 
             int timeE = Environment.TickCount - timeS;
-
             presenter.PrintLog(0, $"{timeRefreshCache},{timeE}");
 
             await task;
@@ -292,7 +292,7 @@ namespace Akichko.libMapView
 
 
         //描画メイン
-        public void DrawTile(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, int timeStamp)
+        public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, int timeStamp)
         {
             int timeS = Environment.TickCount;
             //設定
@@ -306,21 +306,22 @@ namespace Akichko.libMapView
             presenter.DrawBackGround(viewParam);
 
             //各タイルを描画
-            presenter.DrawMap(tileList, filter, timeStamp, viewParam);
+            presenter.DrawTiles(tileList, filter, timeStamp, viewParam);
             int timeDrawMap = Environment.TickCount - timeS;
 
             //タイル枠描画
             presenter.DrawTileBorder(tileList, viewParam);
 
             //選択座標点追加描画
-            presenter.DrawPoint(selectedLatLon, viewParam);
-            presenter.DrawPoint(clickedLatLon, viewParam);
-            presenter.DrawPoint(nearestLatLon, viewParam);
+            presenter.DrawPoint(clickedLatLon, viewParam, PointType.Clicked);
+            presenter.DrawPoint(nearestLatLon, viewParam, PointType.Nearest);
+            presenter.DrawPoint(selectedLatLon, viewParam, PointType.Selected);
 
             //ルート形状描画
-            presenter.DrawRouteGeometry(viewParam);
+            presenter.DrawRouteGeometry(routeGeometry, viewParam);
 
             //中心十字描画
+            presenter.DrawCenterMark(viewParam);
 
             //描画エリア更新
             presenter.UpdateImage();
@@ -351,6 +352,7 @@ namespace Akichko.libMapView
 
         public void SetRouteGeometry(LatLon[] routeGeometry)
         {
+            this.routeGeometry = routeGeometry;
             presenter.SetRouteGeometry(routeGeometry);
         }
 
@@ -521,13 +523,12 @@ namespace Akichko.libMapView
         //地図描画
         void InitializeGraphics(ViewParam viewParam);
         void DrawBackGround(ViewParam viewParam);
-        //void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp);
+        void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam);
         void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam);
-        void DrawPoint(LatLon selectedLatLon, ViewParam viewParam);
-        void DrawRouteGeometry(ViewParam viewParam);
+        void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None);
+        void DrawRouteGeometry(LatLon[] routeGeometry, ViewParam viewParam);
         void UpdateImage();
-        int DrawMapObj(CmnObjHandle cmnObjHandle, ViewParam viewParam);
-        void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam);
+        //int DrawMapObj(CmnObjHandle cmnObjHandle, ViewParam viewParam);
         void RefreshDrawArea();
 
         //属性
@@ -545,6 +546,7 @@ namespace Akichko.libMapView
         //ログ
         void PrintLog(int logType, string logStr);
         void OutputRoute(IEnumerable<CmnObjHandle> route);
+        void DrawCenterMark(ViewParam viewParam);
     }
 
     public class InteractorSettings
@@ -565,12 +567,10 @@ namespace Akichko.libMapView
         public bool isTileBorderDisp = true;
         public bool isOneWayDisp = false;
         public bool isAdminBoundaryDisp = true;
+        public bool isCenterMarkDisp = false;
 
         //フィルタ
-        //public UInt32 drawMapObjType = 0xffffffff;
         public CmnObjFilter drawMapObjFilter = null;
-        //public Dictionary<UInt32, UInt16> drawMapSubType;
-        // public UInt16 drawLinkSubType = 0xffff;
 
         public int timeStamp;
 
@@ -591,5 +591,12 @@ namespace Akichko.libMapView
         }
     }
 
+    public enum PointType
+    {
+        None,
+        Clicked,
+        Nearest,
+        Selected
+    }
 
 }

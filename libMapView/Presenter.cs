@@ -38,8 +38,8 @@ namespace Akichko.libMapView
         protected CmnDrawApi drawApi;
        // protected ViewParam viewParam;
 
-        Bitmap drawAreaBitmap;
-        Graphics g;
+        //Bitmap drawAreaBitmap;
+        //Graphics g;
 
         public InteractorSettings settings;
         public InteractorSettings Settings
@@ -52,8 +52,8 @@ namespace Akichko.libMapView
         }
 
         //public LatLon selectedLatLon;
-        public LatLon[] routeGeometry = null;
-        public List<LatLon[]> boundaryList = null;
+        public LatLon[] routeGeometry = null; //削除予定
+        public List<LatLon[]> boundaryList = null; //削除予定
 
         //パラメータ
         public bool isDrawTileBorder = true;
@@ -83,13 +83,14 @@ namespace Akichko.libMapView
         //初期化
         public void InitializeGraphics(ViewParam viewParam)
         {
-            drawAreaBitmap = viewParam.CreateBitmap();
-            g = Graphics.FromImage(drawAreaBitmap);
+            drawApi.InitializeGraphics(viewParam);
+            //drawAreaBitmap = viewParam.CreateBitmap();
+            //g = Graphics.FromImage(drawAreaBitmap);
             //this.viewParam = viewParam;
         }
 
         //タイルリスト
-        public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam)
+        public void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp, ViewParam viewParam)
         {
             //各タイルを描画
             foreach (CmnTile drawTile in tileList)
@@ -112,66 +113,93 @@ namespace Akichko.libMapView
                 Pen pen = new Pen(Color.Gray, 1);
                 boundaryList.ForEach(x =>
                 {
-                    drawApi.DrawPolyline(g, x, pen, viewParam);
+                    drawApi.DrawPolyline(x, pen, viewParam);
                 });
             }
         }
 
-        //地図描画
-        //public void DrawMap(List<CmnTile> tileList, CmnObjFilter filter, int timeStamp)
-        //{
-        //    //各タイルを描画
-
-        //    //コールバック用ローカル関数定義
-        //    int CbDrawFunc(CmnObjHandle objHdl)
-        //    {
-        //        if (objHdl.obj.CheckTimeStamp(timeStamp))
-        //            return DrawMapObj(objHdl, viewParam);
-        //        else
-        //            return 0;
-        //    }
-
-        //    foreach (CmnTile drawTile in tileList)
-        //    {
-        //        //各オブジェクト描画
-        //        drawTile.ExeDrawFunc(new CbGetObjFunc(CbDrawFunc), filter);
-        //    }
-        //}
-
-        //タイル枠描画
         public void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam)
         {
             if (settings.isTileBorderDisp)
             {
-                tileList.ForEach(x=>drawApi.DrawObj(g, x.ToCmnObjHandle(x), viewParam));
+                tileList.ForEach(x=>drawApi.DrawObj(x.ToCmnObjHandle(x), viewParam));
             }
         }
 
         //座標点追加描画
-        public void DrawPoint(LatLon latlon, ViewParam viewParam)
+        public void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None)
         {
-            drawApi.DrawPoint(g, latlon, viewParam);
+            switch(type)
+            {
+                case PointType.Clicked:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.Yellow, 3), viewParam);
+                    break;
+
+                case PointType.Selected:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Green, 4), viewParam);
+                    break;
+
+                case PointType.Nearest:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Red, 4), viewParam);
+                    break;
+
+                case PointType.None:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3), viewParam);
+                    break;
+
+                default:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3), viewParam);
+                    break;
+            };
         }
 
         //経路計算結果描画
-        public void DrawRouteGeometry(ViewParam viewParam)
+        //public void DrawRouteGeometry(ViewParam viewParam)
+        //{
+        //    //ルート形状描画
+        //    Pen pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
+        //    pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+        //    drawApi.DrawPolyline(g, routeGeometry, pen, viewParam);
+        //}
+
+        //ルート形状描画
+        public void DrawRouteGeometry(LatLon[] polyline, ViewParam viewParam)
         {
-            //ルート形状描画
-            Pen pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
-            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
-            drawApi.DrawPolyline(g, routeGeometry, pen, viewParam);
+            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96,255,0,0),20, true), viewParam);
+        }
+
+        //描画エリア中心＋描画
+        public void DrawCenterMark(ViewParam viewParam)
+        {
+            float size = 5;
+            if (settings.isCenterMarkDisp)
+            {
+                Pen pen = new Pen(Color.Red, 2);
+                PointF[] points = {
+                    new PointF(viewParam.Width_2 - size, viewParam.Height_2),
+                    new PointF(viewParam.Width_2 + size, viewParam.Height_2) };
+
+                drawApi.DrawLines(points, pen);
+
+                points = new PointF[]{
+                    new PointF(viewParam.Width_2, viewParam.Height_2 - size),
+                    new PointF(viewParam.Width_2, viewParam.Height_2 + size) };
+
+                drawApi.DrawLines(points, pen);
+
+            }
         }
 
         //描画結果反映
         public void UpdateImage()
         {
-            viewAccess.UpdateImage(drawAreaBitmap);
+            viewAccess.UpdateImage(drawApi.GetDrawAreaBitMap());
         }
 
 
         public int DrawMapObj(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            drawApi.DrawObj(g, objHdl, viewParam);
+            drawApi.DrawObj(objHdl, viewParam);
 
             return 0;
         }
@@ -268,6 +296,7 @@ namespace Akichko.libMapView
         }
 
 
+
         //public void DispDest(CmnObjHandle linkHdl)
         //{
         //    viewAccess.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
@@ -278,7 +307,6 @@ namespace Akichko.libMapView
 
     public interface IViewApi
     {
-
         //描画エリア
         void UpdateImage(Image newImage);
         void RefreshDrawArea();
@@ -302,16 +330,204 @@ namespace Akichko.libMapView
 
         //Image GetDrawAreaImage();
 
-        //Route
-        //void DispDest(string destStr);
     }
 
-    public enum LatLonType
+    /* 描画用抽象クラス ****************************************************************************************/
+    public abstract class CmnDrawApi
     {
-        ViewCenter,
-        Clicked
+        protected Bitmap drawAreaBitmap;
+        protected Graphics g;
+
+        //個別描画用
+        public CmnObjHandle selectObjHdl = null;
+        public CmnObjHandle selectAttr = null;
+        public List<CmnObjHdlRef> refObjList = null;
+
+        public InteractorSettings settings;
+
+        /* 描画 ==================================================================================*/
+
+        //初期化
+        public void InitializeGraphics(ViewParam viewParam)
+        {
+            drawAreaBitmap = viewParam.CreateBitmap();
+            g = Graphics.FromImage(drawAreaBitmap);
+            //this.viewParam = viewParam;
+        }
+
+        public Image GetDrawAreaBitMap() => drawAreaBitmap;
+
+        //オブジェクト描画
+        public virtual void DrawObj(CmnObjHandle objHdl, ViewParam viewParam)
+        {
+            PointF[] pointF = CalcPolylineInDrawArea(objHdl.Geometry, viewParam);
+
+            Pen pen = GetPen(objHdl);
+            g.DrawLines(pen, pointF);
+            pen.Dispose();
+            return;
+        }
+    
+        //デフォルト描画スタイル
+        public virtual Pen GetPen(CmnObjHandle objHdl)
+        {
+            if (ReferenceEquals(selectObjHdl, objHdl))
+                return new Pen(Color.Red, (float)5.0);
+
+            //else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
+            //    return new Pen(Color.DarkMagenta, (float)5.0);
+
+            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
+                return new Pen(Color.DarkGreen, (float)4.0);
+
+            return new Pen(Color.Black, 1);
+        }
+
+
+        //ライン描画
+        public void DrawPolyline(LatLon[] polyline, Pen pen, ViewParam viewParam)
+        {
+            if (polyline == null)
+                return;
+            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
+
+            if(polyline.Length == 1)
+                g.DrawLines(pen, pointF);
+            else
+                g.DrawLines(pen, pointF);
+
+            return;
+        }
+
+        public void DrawPolyline(LatLon[] polyline, LineStyle style, ViewParam viewParam)
+        {
+            Pen pen = new Pen(style.color, style.width);
+            if(style.isArrowEndCap)
+                pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+
+            DrawPolyline(polyline, pen, viewParam);
+        }
+
+        public void DrawLines(PointF[] pointF, Pen pen)
+        {
+            g.DrawLines(pen, pointF);
+        }
+
+
+        //ポイント描画
+        public virtual void DrawPoint(LatLon latlon, ViewParam viewParam)
+        {
+            if (latlon == null)
+                return;
+            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
+
+            //色は暫定
+            DrawFillCircle(pointF, Color.DodgerBlue, 6);
+            DrawFillCircle(pointF, Color.Yellow, 3);
+        }
+
+        public virtual void DrawPoint(LatLon latlon, PointStyle style, ViewParam viewParam)
+        {
+            if (latlon == null)
+                return;
+            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
+
+            //色は暫定
+            DrawFillCircle(pointF, style.outerColor, style.outerRadius);
+            DrawFillCircle(pointF, style.innerColor, style.innerRadius);
+        }
+
+        protected virtual void DrawFillCircle(PointF pointF, Color color, float radius)
+            => g.FillEllipse(new SolidBrush(color), pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
+
+
+        //座標変換
+        protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
+        {
+            //相対緯度経度算出
+            double relLat = latlon.lat - viewParam.viewCenter.lat;
+            double relLon = latlon.lon - viewParam.viewCenter.lon;
+
+            return new PointF(
+                (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
+                (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
+
+        }
+
+        protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
+        {
+            return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
+        }
+
+
+
+        //public virtual RangeFilter<ushort> GetFilter(uint number) => null;
+
+        //public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
+        //{
+        //    return filter.AddRule(objType, subFilter);
+        //}
     }
 
+    public class PointStyle
+    {
+        public Color outerColor;
+        public int outerRadius;
+        public Color innerColor;
+        public int innerRadius;
+
+        public PointStyle(Color outerColor, int outerRadius, Color innerColor, int innerRadius)
+        {
+            this.outerColor = outerColor;
+            this.outerRadius = outerRadius;
+            this.innerColor = innerColor;
+            this.innerRadius = innerRadius;
+        }
+    }
+
+    public class LineStyle
+    {
+        public Color color;
+        public int width;
+        public bool isArrowEndCap;
+
+        public LineStyle(Color color, int width, bool isArrowEndCap = false)
+        {
+            this.color = color;
+            this.width = width;
+            this.isArrowEndCap = isArrowEndCap;
+        }
+    }
+
+    public class LogArray
+    {
+        string[] logStrArray;
+
+        public LogArray(int logNum)
+        {
+            logStrArray = new string[logNum];
+        }
+
+        public void UpdateLogStr(int logType, string logStr)
+        {
+            logStrArray[logType] = logStr;
+        }
+
+        public override string ToString()
+        {
+            string retStr = "";
+            for (int i = 0; i < logStrArray.Length; i++)
+            {
+                retStr += $"[{i}]{logStrArray[i]} ";
+            }
+
+            return retStr;
+        }
+    }
+
+
+    /* 不要？ ************************************************************/
+  
     public class ViewModel
     {
         //PictureBox
@@ -326,7 +542,7 @@ namespace Akichko.libMapView
 
         public LatLon centerLatLon
         {
-            get{ return _centerLatLon; }
+            get { return _centerLatLon; }
 
             set
             {
@@ -366,148 +582,5 @@ namespace Akichko.libMapView
 
     }
 
-
-    /* 描画用抽象クラス ****************************************************************************************/
-    public abstract class CmnDrawApi
-    {
-        //個別描画用
-        public CmnObjHandle selectObjHdl = null;
-        public CmnObjHandle selectAttr = null;
-        public List<CmnObjHdlRef> refObjList = null;
-        //public LatLon selectPoint;
-        //public List<CmnDirObjHandle> routeObjList = null;
-
-        public InteractorSettings settings;
-
-        /* 描画 ==================================================================================*/
-
-        //オブジェクト描画
-        public virtual void DrawObj(Graphics g, CmnObjHandle objHdl, ViewParam viewParam)
-        {
-            PointF[] pointF = CalcPolylineInDrawArea(objHdl.Geometry, viewParam);
-
-            Pen pen = GetPen(objHdl);
-            g.DrawLines(pen, pointF);
-            pen.Dispose();
-            return;
-        }
-    
-        //デフォルト描画スタイル
-        public virtual Pen GetPen(CmnObjHandle objHdl)
-        {
-            if (ReferenceEquals(selectObjHdl, objHdl))
-                return new Pen(Color.Red, (float)5.0);
-
-            //else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
-            //    return new Pen(Color.DarkMagenta, (float)5.0);
-
-            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
-                return new Pen(Color.DarkGreen, (float)4.0);
-
-            return new Pen(Color.Black, 1);
-        }
-
-        //ポイント描画
-        public virtual void DrawPoint(Graphics g, LatLon latlon, ViewParam viewParam)
-        {
-            if (latlon == null)
-                return;
-            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
-
-            //色は暫定
-            DrawFillCircle(g, pointF, new SolidBrush(Color.DodgerBlue), 6);
-            DrawFillCircle(g, pointF, new SolidBrush(Color.Yellow), 3);
-            //float width = 6;
-            //g.FillEllipse(new SolidBrush(Color.DodgerBlue), pointF.X - width, pointF.Y - width, width*2, width*2);
-            //width = 3;
-            //g.FillEllipse(new SolidBrush(Color.Yellow), pointF.X - width, pointF.Y - width, width * 2, width * 2);
-
-        }
-
-
-        public void DrawPolyline(Graphics g, LatLon[] polyline, Pen pen, ViewParam viewParam)
-        {
-            if (polyline == null)
-                return;
-            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
-
-            if(polyline.Length == 1)
-                g.DrawLines(pen, pointF);
-            else
-                g.DrawLines(pen, pointF);
-
-            return;
-        }
-
-        public void DrawPolyline(Graphics g, LatLon[] polyline, ViewParam viewParam)
-        {
-            if (polyline == null)
-                return;
-            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
-
-            Pen pen = new Pen(Color.FromArgb(96, 255,0,0), 20);
-            pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
-
-            g.DrawLines(pen, pointF);
-            return;
-        }
-
-        protected virtual void DrawFillCircle(Graphics g, PointF pointF, SolidBrush brush, float radius)
-            => g.FillEllipse(brush, pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
-
-        protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
-        {
-            //相対緯度経度算出
-            double relLat = latlon.lat - viewParam.viewCenter.lat;
-            double relLon = latlon.lon - viewParam.viewCenter.lon;
-
-            return new PointF(
-                (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
-                (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
-
-        }
-
-        protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
-        {
-            return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
-        }
-
-
-
-        //public virtual RangeFilter<ushort> GetFilter(uint number) => null;
-
-        //public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
-        //{
-        //    return filter.AddRule(objType, subFilter);
-        //}
-    }
-
-
-
-    public class LogArray
-    {
-        string[] logStrArray;
-
-        public LogArray(int logNum)
-        {
-            logStrArray = new string[logNum];
-        }
-
-        public void UpdateLogStr(int logType, string logStr)
-        {
-            logStrArray[logType] = logStr;
-        }
-
-        public override string ToString()
-        {
-            string retStr = "";
-            for (int i = 0; i < logStrArray.Length; i++)
-            {
-                retStr += $"[{i}]{logStrArray[i]} ";
-            }
-
-            return retStr;
-        }
-    }
 
 }
