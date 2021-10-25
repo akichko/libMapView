@@ -179,8 +179,7 @@ namespace Akichko.libMapView
             presenter.ShowAttribute(selectedHdl);
             this.nearestLatLon = nearestPos.latLon;
 
-            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
-            presenter.SetRelatedObj(relatedHdlList);
+            SearchRelatedObject(selectedHdl);
 
             return selectedHdl;
         }
@@ -194,8 +193,7 @@ namespace Akichko.libMapView
             presenter.SetSelectedObjHdl(selectedHdl);
             presenter.ShowAttribute(selectedHdl);
 
-            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
-            presenter.SetRelatedObj(relatedHdlList);
+            SearchRelatedObject(selectedHdl);
 
             return selectedHdl;
         }
@@ -209,8 +207,7 @@ namespace Akichko.libMapView
             presenter.SetSelectedObjHdl(selectedHdl);
             presenter.ShowAttribute(selectedHdl);
 
-            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
-            presenter.SetRelatedObj(relatedHdlList);
+            SearchRelatedObject(selectedHdl);
 
             return selectedHdl;
         }
@@ -224,10 +221,15 @@ namespace Akichko.libMapView
             presenter.SetSelectedObjHdl(selectedHdl);
             presenter.ShowAttribute(selectedHdl);
 
-            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
-            presenter.SetRelatedObj(relatedHdlList);
+            SearchRelatedObject(selectedHdl);
 
             return selectedHdl;
+        }
+
+        void SearchRelatedObject(CmnObjHandle selectedHdl)
+        {
+            List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
+            presenter.SetRelatedObj(relatedHdlList);
         }
 
         public CmnObjHandle SearchAttrObject(CmnSearchKey key)
@@ -258,8 +260,8 @@ namespace Akichko.libMapView
             IEnumerable<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
 
             //描画エリア内タイル抽出（隣接１メッシュ）
-            TileXYL xylNW = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(ERectPos.NorthWest));
-            TileXYL xylSE = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(ERectPos.SouthEast));
+            TileXYL xylNW = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.NorthWest));
+            TileXYL xylSE = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.SouthEast));
 
             List<CmnTile> drawTileList2 = drawTileList
                 .Where(x => CheckInDrawArea(x.TileId, xylNW, xylSE, 0))
@@ -300,13 +302,13 @@ namespace Akichko.libMapView
 
             //Graphics初期化
             presenter.InitializeGraphics(viewParam);
-            int timeGInit = Environment.TickCount - timeS;
 
             //背景形状を描画
             presenter.DrawBackGround(viewParam);
 
             //各タイルを描画
             presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
+
             int timeDrawMap = Environment.TickCount - timeS;
 
             //タイル枠描画
@@ -328,7 +330,7 @@ namespace Akichko.libMapView
             int timeUpdateImage = Environment.TickCount - timeS;
 
 
-            presenter.PrintLog(1, $"{timeGInit},{timeDrawMap},{timeUpdateImage}");
+            presenter.PrintLog(1, $"{timeDrawMap},{timeUpdateImage}");
         }
 
         public void RefreshDrawArea()
@@ -353,7 +355,7 @@ namespace Akichko.libMapView
         public void SetRouteGeometry(LatLon[] routeGeometry)
         {
             this.routeGeometry = routeGeometry;
-            presenter.SetRouteGeometry(routeGeometry);
+            //presenter.SetRouteGeometry(routeGeometry);
         }
 
         public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
@@ -527,6 +529,7 @@ namespace Akichko.libMapView
         void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam);
         void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None);
         void DrawRouteGeometry(LatLon[] routeGeometry, ViewParam viewParam);
+        void DrawCenterMark(ViewParam viewParam);
         void UpdateImage();
         //int DrawMapObj(CmnObjHandle cmnObjHandle, ViewParam viewParam);
         void RefreshDrawArea();
@@ -540,13 +543,12 @@ namespace Akichko.libMapView
         void SetRelatedObj(List<CmnObjHdlRef> relatedHdlList);
         void UpdateClickedLatLon(LatLon clickedLatLon);
         void SetBoundaryList(List<LatLon[]> boundaryList);
-        void SetRouteGeometry(LatLon[] routeGeometry);
+        //void SetRouteGeometry(LatLon[] routeGeometry);
+        void OutputRoute(IEnumerable<CmnObjHandle> route);
         //void SetSelectedLatLon(LatLon latlon);
 
         //ログ
         void PrintLog(int logType, string logStr);
-        void OutputRoute(IEnumerable<CmnObjHandle> route);
-        void DrawCenterMark(ViewParam viewParam);
     }
 
     public class InteractorSettings
@@ -571,7 +573,6 @@ namespace Akichko.libMapView
 
         //フィルタ
         public CmnObjFilter drawMapObjFilter = null;
-
         public long timeStamp;
 
         public InteractorSettings()

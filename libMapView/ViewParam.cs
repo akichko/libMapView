@@ -133,33 +133,18 @@ namespace Akichko.libMapView
 
         
 
-        public LatLon GetDrawAreaRectPos(ERectPos pos)
+        public LatLon GetDrawAreaRectPos(RectPos pos)
         {
-            switch (pos)
+            var ret = pos switch
             {
-                case ERectPos.SouthWest:
-
-                    return GetLatLon( 0, Height);
-
-                case ERectPos.SouthEast:
-
-                    return GetLatLon(Width, Height);
-
-                case ERectPos.NorthWest:
-
-                    return GetLatLon(0, 0);
-
-                case ERectPos.NorthEast:
-
-                    return GetLatLon(Width, 0);
-
-                case ERectPos.Center:
-
-                    return viewCenter;
-
-                default:
-                    throw new NotImplementedException();
-            }
+                RectPos.SouthWest => GetLatLon(0, Height),
+                RectPos.SouthEast => GetLatLon(Width, Height),
+                RectPos.NorthWest => GetLatLon(0, 0),
+                RectPos.NorthEast => GetLatLon(Width, 0),
+                RectPos.Center => viewCenter,
+                _ => throw new NotImplementedException()
+            };
+            return ret;
         }
 
 

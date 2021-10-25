@@ -277,10 +277,10 @@ namespace Akichko.libMapView
             this.boundaryList = boundaryList;
         }
 
-        public void SetRouteGeometry(LatLon[] routeGeometry)
-        {
-            this.routeGeometry = routeGeometry;
-        }
+        //public void SetRouteGeometry(LatLon[] routeGeometry)
+        //{
+        //    this.routeGeometry = routeGeometry;
+        //}
 
         //public void SetSelectedLatLon(LatLon latlon)
         //{
@@ -326,12 +326,6 @@ namespace Akichko.libMapView
 
         //ログ出力
         void PrintLog(int logType, string logStr);
-
-
-        //ViewModel GetViewModel();
-
-        //Image GetDrawAreaImage();
-
     }
 
     /* 描画用抽象クラス ****************************************************************************************/
@@ -373,12 +367,15 @@ namespace Akichko.libMapView
         //デフォルト描画スタイル
         public virtual Pen GetPen(CmnObjHandle objHdl)
         {
+            //選択中オブジェクト
             if (ReferenceEquals(selectObjHdl, objHdl))
                 return new Pen(Color.Red, (float)5.0);
 
             //else if (routeObjList?.Count(x => x.obj.Id == obj.Id) > 0)
             //    return new Pen(Color.DarkMagenta, (float)5.0);
 
+
+            //属性リスト選択中オブジェクト
             else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
                 return new Pen(Color.DarkGreen, (float)4.0);
 
