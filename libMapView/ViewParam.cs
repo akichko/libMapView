@@ -191,7 +191,7 @@ namespace Akichko.libMapView
         }
 
 
-        public Bitmap CreateBitmap()
+        public Image CreateBitmap()
         {
             return new Bitmap(width, height);
         }

@@ -61,10 +61,10 @@ namespace Akichko.libMapView
             interactor.OpenFile(fileName, mapMgr, drawApi);
         }
 
-        //public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, InteractorSettings settingsBg)
-        //{
-        //    interactor.OpenBgFile(fileName, mapMgr, drawApi, settingsBg);
-        //}
+        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
+        {
+            interactor.OpenBgFile(fileName, mapMgr, drawApi, presenter, settingsBg);
+        }
 
         public void Shutdown()
         {
@@ -177,7 +177,7 @@ namespace Akichko.libMapView
 
             try
             {
-                await task;
+                await task.ConfigureAwait(false);
                // await taskBg;
             }
             catch (Exception e)

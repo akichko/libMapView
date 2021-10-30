@@ -86,16 +86,18 @@ namespace Akichko.libMapView
         /* 描画 ******************************************************/
 
         //初期化
-        public void InitializeGraphics(ViewParam viewParam)
+        public void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, IOutputBoundary presenter = null)
         {
-            drawApi.InitializeGraphics(viewParam);
+            this.settings = settings;
+            drawApi.settings = settings;
+            drawApi.InitializeGraphics(viewParam, ((Presenter)presenter)?.drawApi);
             //drawAreaBitmap = viewParam.CreateBitmap();
             //g = Graphics.FromImage(drawAreaBitmap);
             //this.viewParam = viewParam;
         }
 
         //タイルリスト
-        public void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp)
+        public void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp = -1)
         {
             //各タイルを描画
             foreach (CmnTile drawTile in tileList)
@@ -346,7 +348,7 @@ namespace Akichko.libMapView
     /* 描画用抽象クラス ****************************************************************************************/
     public abstract class CmnDrawApi
     {
-        protected Bitmap drawAreaBitmap;
+        protected Image drawAreaBitmap;
         protected Graphics g;
 
         //個別描画用
@@ -359,12 +361,21 @@ namespace Akichko.libMapView
         /* 描画 ==================================================================================*/
 
         //初期化
-        public void InitializeGraphics(ViewParam viewParam)
+        public void InitializeGraphics(ViewParam viewParam, CmnDrawApi preDrawApi = null)
         {
+            if (preDrawApi != null)
+            {
+                drawAreaBitmap = preDrawApi.drawAreaBitmap;
+                g = preDrawApi.GetGraphics;
+                return;
+            }
+
             drawAreaBitmap = viewParam.CreateBitmap();
             g = Graphics.FromImage(drawAreaBitmap);
             //this.viewParam = viewParam;
         }
+
+        public Graphics GetGraphics => g;
 
         public Image GetDrawAreaBitMap() => drawAreaBitmap;
 
