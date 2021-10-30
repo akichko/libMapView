@@ -32,12 +32,13 @@ using Akichko.libGis;
 
 namespace Akichko.libMapView
 {
-    //public class SuperInteractor : IInputBoundary
-    //{
-    //    Interactor front;
-    //    Interactor back;
-    //    protected IOutputBoundary presenter;
-    //}
+    public class SuperInteractor
+    {
+        Interactor front;
+        Interactor back;
+        protected IOutputBoundary presenter;
+
+    }
 
     public class Interactor : IInputBoundary
     {
@@ -127,6 +128,93 @@ namespace Akichko.libMapView
         }
 
 
+        /* 描画 ***********************************************/
+
+        public int Paint()
+        {
+            if (!status.drawEnable || !status.isPaintNeeded)
+                return 0;
+            status.isPaintNeeded = false;
+
+            int timeS = Environment.TickCount;
+
+            //描画対象タイルを特定
+            uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
+            IEnumerable<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
+
+            //描画エリア内タイル抽出（隣接１メッシュ）
+            TileXYL xylNW = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.NorthWest));
+            TileXYL xylSE = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.SouthEast));
+
+            List<CmnTile> drawAreaTileList = drawTileList
+                .Where(x => CheckInDrawArea(x.TileId, xylNW, xylSE, 0))
+                .ToList();
+
+            //各タイルを描画
+            DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
+
+            int exeTime = Environment.TickCount - timeS;
+            presenter.PrintLog(1, $"Paint:{exeTime}");
+
+            return 0;
+        }
+
+        //描画メイン
+        public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp = -1)
+        {
+            int timeS = Environment.TickCount;
+            //設定
+            presenter.SetViewSettings(settings);
+
+            //Graphics初期化
+            presenter.InitializeGraphics(viewParam);
+
+            //背景形状を描画
+            presenter.DrawBackGround(viewParam);
+
+            //各タイルを描画
+            presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
+
+            int timeDrawMap = Environment.TickCount - timeS;
+
+            //タイル枠描画
+            presenter.DrawTileBorder(tileList, viewParam);
+
+            //選択座標点追加描画
+            presenter.DrawPoint(status.clickedLatLon, viewParam, PointType.Clicked);
+            presenter.DrawPoint(status.nearestLatLon, viewParam, PointType.Nearest);
+            presenter.DrawPoint(status.selectedLatLon, viewParam, PointType.Selected);
+
+            //ルート形状描画
+            presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
+
+            //中心十字描画
+            presenter.DrawCenterMark(viewParam);
+
+            //描画エリア更新
+            presenter.UpdateImage();
+            int timeUpdateImage = Environment.TickCount - timeS;
+
+
+            //presenter.PrintLog(2, $"Draw:{timeDrawMap},ImgUpdate:{timeUpdateImage}");
+        }
+
+        public void RefreshDrawArea()
+        {
+            status.isPaintNeeded = true;
+            presenter.RefreshDrawArea();
+        }
+
+        bool CheckInDrawArea(uint tileId, TileXYL xylNW, TileXYL xylSE, int range)
+        {
+            TileXYL xyl = mapMgr.tileApi.CalcTileXYL(tileId);
+
+            if (xyl.x < xylNW.x - range || xyl.x > xylSE.x + range || xyl.y < xylSE.y - range || xyl.y > xylNW.y + range)
+                return false;
+            else
+                return true;
+        }
+
         /* データ管理 ***********************************************/
 
         public async Task<int> RefreshMapCacheAsync()
@@ -199,8 +287,23 @@ namespace Akichko.libMapView
             return 0;
         }
 
-        /* 検索 ***********************************************/
+        public void ReloadMap()
+        {
+            status.isReloadNeeded = true;
+            presenter.RefreshDrawArea();
+        }
 
+        private void UpdateCurrentTileId()
+        {
+            uint newTileId = mapMgr?.tileApi.CalcTileId(viewParam.viewCenter) ?? 0;
+            if (status.currentTileId != newTileId)
+            {
+                status.currentTileId = newTileId;
+                status.isReloadNeeded = true;
+            }
+        }
+
+        /* 検索 ***********************************************/
 
 
         public CmnObjHandle SearchObject(LatLon baseLatLon)
@@ -279,101 +382,7 @@ namespace Akichko.libMapView
         }
 
 
-
-        /* 描画 ***********************************************/
-
-        public int Paint()
-        {
-            if (!status.drawEnable || !status.isPaintNeeded)
-                return 0;
-            status.isPaintNeeded = false;
-
-            int timeS = Environment.TickCount;
-
-            //描画対象タイルを特定
-            uint centerTileId = mapMgr.tileApi.CalcTileId(viewParam.viewCenter);
-            IEnumerable<CmnTile> drawTileList = mapMgr.SearchTiles(centerTileId, settings.tileDrawDistanceX, settings.tileDrawDistanceY);
-
-            //描画エリア内タイル抽出（隣接１メッシュ）
-            TileXYL xylNW = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.NorthWest));
-            TileXYL xylSE = mapMgr.tileApi.CalcTileXYL(viewParam.GetDrawAreaRectPos(RectPos.SouthEast));
-
-            List<CmnTile> drawAreaTileList = drawTileList
-                .Where(x => CheckInDrawArea(x.TileId, xylNW, xylSE, 0))
-                .ToList();
-
-            //各タイルを描画
-            DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
-
-            int exeTime = Environment.TickCount - timeS;
-            presenter.PrintLog(1, $"Paint:{exeTime}");
-
-            return 0;
-        }
-
-        bool CheckInDrawArea(uint tileId, TileXYL xylNW, TileXYL xylSE, int range)
-        {
-            TileXYL xyl = mapMgr.tileApi.CalcTileXYL(tileId);
-
-            if (xyl.x < xylNW.x - range || xyl.x > xylSE.x + range || xyl.y < xylSE.y - range || xyl.y > xylNW.y + range)
-                return false;
-            else
-                return true;
-        }
-
-
-        //描画メイン
-        public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp = -1)
-        {
-            int timeS = Environment.TickCount;
-            //設定
-            presenter.SetViewSettings(settings);
-
-            //Graphics初期化
-            presenter.InitializeGraphics(viewParam);
-
-            //背景形状を描画
-            presenter.DrawBackGround(viewParam);
-
-            //各タイルを描画
-            presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
-
-            int timeDrawMap = Environment.TickCount - timeS;
-
-            //タイル枠描画
-            presenter.DrawTileBorder(tileList, viewParam);
-
-            //選択座標点追加描画
-            presenter.DrawPoint(status.clickedLatLon, viewParam, PointType.Clicked);
-            presenter.DrawPoint(status.nearestLatLon, viewParam, PointType.Nearest);
-            presenter.DrawPoint(status.selectedLatLon, viewParam, PointType.Selected);
-
-            //ルート形状描画
-            presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
-
-            //中心十字描画
-            presenter.DrawCenterMark(viewParam);
-
-            //描画エリア更新
-            presenter.UpdateImage();
-            int timeUpdateImage = Environment.TickCount - timeS;
-
-
-            //presenter.PrintLog(2, $"Draw:{timeDrawMap},ImgUpdate:{timeUpdateImage}");
-        }
-
-        public void RefreshDrawArea()
-        {
-            status.isPaintNeeded = true;
-            presenter.RefreshDrawArea();
-        }
-
-        public void ReloadMap()
-        {
-            status.isReloadNeeded = true;
-            presenter.RefreshDrawArea();
-        }
-
+        /* 情報保持 ***********************************************/
 
         public void SetSelectedLatLon(LatLon latlon)
         {
@@ -469,17 +478,6 @@ namespace Akichko.libMapView
         //}
 
 
-        /* テキスト表示 ***********************************************/
-
-        private void UpdateCurrentTileId()
-        {
-            uint newTileId = mapMgr?.tileApi.CalcTileId(viewParam.viewCenter) ?? 0;
-            if (status.currentTileId != newTileId)
-            {
-                status.currentTileId = newTileId;
-                status.isReloadNeeded = true;
-            }
-        }
 
 
         /* その他 ***********************************************/
