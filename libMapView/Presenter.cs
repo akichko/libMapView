@@ -69,8 +69,12 @@ namespace Akichko.libMapView
         public void SetDrawInterface(CmnDrawApi drawApi)
         {
             this.drawApi = drawApi;
-
         }
+
+        //public void SetDrawBgInterface(CmnDrawApi drawBgApi)
+        //{
+        //    this.drawBgApi = drawBgApi;
+        //}
 
         public void SetViewSettings(InteractorSettings settings)
         {
@@ -167,7 +171,9 @@ namespace Akichko.libMapView
         //ルート形状描画
         public void DrawRouteGeometry(LatLon[] polyline, ViewParam viewParam)
         {
-            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96, 255, 0, 0), 20, true), viewParam);
+            if (polyline == null)
+                return;
+            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96, 255, 0, 0), 20, false, true), viewParam);
         }
 
         //描画エリア中心＋描画
@@ -328,6 +334,15 @@ namespace Akichko.libMapView
         void PrintLog(int logType, string logStr);
     }
 
+    public interface IDraw
+    {
+        void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp);
+        LineStyle GetLineStyleSelected();
+        LineStyle GetLineStyleAttrSelected();
+        LineStyle GetLineStyleReffered(int objRefType);
+        LineStyle GetLineStyle();
+    }
+
     /* 描画用抽象クラス ****************************************************************************************/
     public abstract class CmnDrawApi
     {
@@ -361,6 +376,34 @@ namespace Akichko.libMapView
             Pen pen = GetPen(objHdl);
             g.DrawLines(pen, pointF);
             pen.Dispose();
+            return;
+        }
+
+        public virtual void DrawObj2(CmnObjHandle objHdl, ViewParam viewParam)
+        {
+            LineStyle lineStyle;
+            IDraw drawObj = (IDraw)objHdl.obj;
+
+            if (ReferenceEquals(selectObjHdl, objHdl))
+                lineStyle = drawObj.GetLineStyleSelected();
+
+            //属性リスト選択中オブジェクト
+            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
+                lineStyle = drawObj.GetLineStyleAttrSelected();
+
+            //関連オブジェクト
+            else if (refObjList?.Count(x => x.objHdl.IsEqualTo(objHdl)) > 0)
+            {
+                lineStyle = drawObj.GetLineStyleReffered(refObjList.Where(x => x.objHdl.IsEqualTo(objHdl)).First().objRefType);             
+            }
+            else
+                lineStyle = drawObj.GetLineStyle();
+            
+            //lineStyle = new LineStyle(Color.Black, 1);
+
+
+            DrawPolyline(objHdl.Geometry, lineStyle, viewParam);
+
             return;
         }
 
@@ -440,6 +483,20 @@ namespace Akichko.libMapView
             => g.FillEllipse(new SolidBrush(color), pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
 
 
+        protected virtual void DrawCircle(LatLon latlon, LineStyle style, float radiusMeter, ViewParam viewParam)
+        {
+            if (latlon == null)
+                return;
+            PointF pointC = CalcPointInDrawArea(latlon, viewParam);
+            PointF pointNW = CalcPointInDrawArea(latlon.GetOffsetLatLon(-radiusMeter, radiusMeter), viewParam);
+
+            float radiusX = pointC.X - pointNW.X;
+            float radiusY = pointC.Y - pointNW.Y;
+
+            g.DrawEllipse(new Pen(style.color, style.width), pointNW.X, pointNW.Y, radiusX * 2, radiusY * 2);
+
+        }
+
         //座標変換
         protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
         {
@@ -487,13 +544,15 @@ namespace Akichko.libMapView
     public class LineStyle
     {
         public Color color;
-        public int width;
+        public float width;
+        public bool isArrowStartCap;
         public bool isArrowEndCap;
 
-        public LineStyle(Color color, int width, bool isArrowEndCap = false)
+        public LineStyle(Color color, float width, bool isArrowStartCap = false, bool isArrowEndCap = false)
         {
             this.color = color;
             this.width = width;
+            this.isArrowStartCap = isArrowStartCap;
             this.isArrowEndCap = isArrowEndCap;
         }
     }

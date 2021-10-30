@@ -61,6 +61,11 @@ namespace Akichko.libMapView
             interactor.OpenFile(fileName, mapMgr, drawApi);
         }
 
+        //public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, InteractorSettings settingsBg)
+        //{
+        //    interactor.OpenBgFile(fileName, mapMgr, drawApi, settingsBg);
+        //}
+
         public void Shutdown()
         {
             interactor.Shutdown();
@@ -159,9 +164,26 @@ namespace Akichko.libMapView
 
         /* 描画 **************************************************************/
 
-        public void Paint()
+        public async void Paint()
         {
-            interactor.PaintAsync();
+            var task = interactor.RefreshMapCacheAsync();
+
+            //var taskBg = interactor.RefreshMapCacheAsync(true);
+
+            //同期　⇒しないとスレッドセーフ懸念
+            //task.Wait();
+
+            interactor.Paint();
+
+            try
+            {
+                await task;
+               // await taskBg;
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException(e.Message, e.InnerException);
+            }
         }
 
         public void RefreshDrawArea()
