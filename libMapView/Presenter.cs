@@ -57,7 +57,7 @@ namespace Akichko.libMapView
         public List<LatLon[]> boundaryList = null; //削除予定
 
         //パラメータ
-        public bool isDrawTileBorder = true;
+        //public bool isDrawTileBorder = true;
         //public bool isDrawOneWay = true;
 
 

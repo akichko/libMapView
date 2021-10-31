@@ -32,162 +32,7 @@ using Akichko.libGis;
 
 namespace Akichko.libMapView
 {
-    public class InteractorMgr : IInputBoundary
-    {
-        Interactor front;
-        Interactor background;
-        protected IOutputBoundary presenter;
-        //protected InteractorSettings settings;
-        ViewParam viewParam;
-
-        Interactor currentInteractor;
-        SemaphoreSlim semaphoPainting = new SemaphoreSlim(1, 1);
-
-        public InteractorMgr(IOutputBoundary presenter, InteractorSettings settings)
-        {
-            front = new Interactor(presenter, settings);
-            currentInteractor = front;
-        }
-
-
-        public void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
-        {
-            front.OpenFile(fileName, mapMgr, drawApi);
-        }
-
-        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
-        {
-            background = new Interactor(presenter, settingsBg);
-            background.SetViewParam(viewParam);
-            background.OpenFile(fileName, mapMgr, drawApi);
-        }
-
-        public void Shutdown()
-        {
-            front?.Shutdown();
-            background?.Shutdown();
-        }
-
-        public void SetViewCenter(LatLon latlon)
-        {
-            front?.SetViewCenter(latlon);
-            background?.SetViewCenter(latlon);
-        }
-
-        public void SetSettings(InteractorSettings settings)
-        {
-            currentInteractor.SetSettings(settings);
-            RefreshDrawArea();
-        }
-
-        public void SetViewParam(ViewParam viewParam)
-        {
-            this.viewParam = viewParam;
-            front?.SetViewParam(viewParam);
-            background?.SetViewParam(viewParam);
-        }
-
-        public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
-        {
-            currentInteractor.SetBoundaryGeometry(boundaryList);
-            RefreshDrawArea();
-        }
-
-        public void SetClickedLatLon(LatLon clickedLatLon)
-        {
-            currentInteractor.SetClickedLatLon(clickedLatLon);
-            RefreshDrawArea();
-        }
-
-        public void SetRouteGeometry(LatLon[] routeGeometry)
-        {
-            currentInteractor.SetRouteGeometry(routeGeometry);
-            RefreshDrawArea();
-        }
-
-        public void SetSelectedAttr(CmnObjHandle attrObjHdl)
-        {
-            currentInteractor.SetSelectedAttr(attrObjHdl);
-            RefreshDrawArea();
-        }
-
-        public void SetSelectedLatLon(LatLon latlon)
-        {
-            currentInteractor.SetSelectedLatLon(latlon);
-            RefreshDrawArea();
-        }
-
-        public void Paint()
-        {
-            //semaphoPainting.Wait();
-            
-            if(background == null)
-            {
-                front.Paint();
-            }
-            else
-            {
-                int ret1 = background?.MakeImage() ?? -1;
-                if (ret1 < 0)
-                    return;
-
-                int ret2 = front.MakeImage(background?.presenter);
-                if (ret2 < 0)
-                    return;
-
-                front.UpdateImage();
-            }
-            //semaphoPainting.Release();
-        }
-
-        public void RefreshDrawArea()
-        {
-            background?.RefreshDrawArea();
-            front.RefreshDrawArea();
-        }
-
-        public CmnObjHandle SearchObject(LatLon baseLatLon)
-        {
-            return currentInteractor.SearchObject(baseLatLon);
-        }
-
-        public CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId)
-        {
-            return currentInteractor.SearchObject(tileId, objType, objId);
-        }
-
-        public CmnObjHandle SearchObject(CmnSearchKey key)
-        {
-            return currentInteractor.SearchObject(key);
-        }
-
-        public CmnObjHandle SearchAttrObject(CmnSearchKey key)
-        {
-            return currentInteractor.SearchAttrObject(key);
-        }
-
-        public RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
-        {
-            return currentInteractor.CalcRoute(orgLatLon, dstLatLon);
-        }
-
-        public async Task<int> RefreshMapCacheAsync()
-        {
-            try
-            {
-                await front.RefreshMapCacheAsync().ConfigureAwait(false);
-                if (background != null)
-                    await background.RefreshMapCacheAsync().ConfigureAwait(false);
-            }
-            catch(Exception e)
-            {
-                throw new ApplicationException(e.Message, e.InnerException);
-            }
-            return 0;
-        }
-    }
-
-    public class Interactor// : IInputBoundary
+    public class Interactor : IInputBoundary
     {
         protected CmnMapMgr mapMgr;
         protected ViewParam viewParam;
@@ -202,7 +47,13 @@ namespace Akichko.libMapView
         SemaphoreSlim semaphoReloading = new SemaphoreSlim(1, 1);
 
         //制御用
-        protected InteractorStatus status;
+        public InteractorStatus status;
+
+        public InteractorStatus Status
+        {
+            get { return status; }
+            set { status = value; }
+        }
 
         /* 起動・設定・終了 ***********************************************/
 
@@ -249,7 +100,30 @@ namespace Akichko.libMapView
 
         /* 描画 ***********************************************/
 
-        public int PaintAppend(IOutputBoundary prePresenter = null)
+        //public int PaintAppend(IOutputBoundary prePresenter = null)
+        //{
+        //    if (!status.drawEnable || !status.isPaintNeeded)
+        //        return -1;
+        //    status.isPaintNeeded = false;
+
+        //    int timeS = Environment.TickCount;
+
+        //    //描画対象タイルを特定
+        //    List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
+
+        //    //描画
+        //    presenter.InitializeGraphics(settings, viewParam, prePresenter);
+        //    DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
+
+        //    UpdateImage();
+
+        //    int exeTime = Environment.TickCount - timeS;
+        //    presenter.PrintLog(1, $"Paint:{exeTime}");
+
+        //    return 0;
+        //}
+
+        public int MakeImage(IInputBoundary preInteractor = null)
         {
             if (!status.drawEnable || !status.isPaintNeeded)
                 return -1;
@@ -261,30 +135,7 @@ namespace Akichko.libMapView
             List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
 
             //描画
-            presenter.InitializeGraphics(settings, viewParam, prePresenter);
-            DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
-
-            UpdateImage();
-
-            int exeTime = Environment.TickCount - timeS;
-            presenter.PrintLog(1, $"Paint:{exeTime}");
-
-            return 0;
-        }
-
-        public int MakeImage(IOutputBoundary prePresenter = null)
-        {
-            if (!status.drawEnable || !status.isPaintNeeded)
-                return -1;
-            status.isPaintNeeded = false;
-
-            int timeS = Environment.TickCount;
-
-            //描画対象タイルを特定
-            List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
-
-            //描画
-            presenter.InitializeGraphics(settings, viewParam, prePresenter);
+            presenter.InitializeGraphics(settings, viewParam, ((Interactor)preInteractor)?.presenter);
             DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
 
             //UpdateImage();
@@ -297,13 +148,13 @@ namespace Akichko.libMapView
 
         public void UpdateImage() => presenter.UpdateImage();
 
-        public int Paint(IInputBoundary preInput = null)
+        public void Paint(IInputBoundary preInteractor = null)
         {
-            int ret = MakeImage();
+            int ret = MakeImage(preInteractor);
             if(ret == 0)
                 UpdateImage();
 
-            return 0;
+            return;
         }
 
 
@@ -353,45 +204,6 @@ namespace Akichko.libMapView
             //中心十字描画
             presenter.DrawCenterMark(viewParam);
         }
-
-        //public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp = -1)
-        //{
-        //    //int timeS = Environment.TickCount;
-        //    //設定
-        //    //presenter.SetViewSettings(settings);
-
-        //    //Graphics初期化
-        //    presenter.InitializeGraphics(settings, viewParam);
-
-        //    //背景形状を描画
-        //    presenter.DrawBackGround(viewParam);
-
-        //    //各タイルを描画
-        //    presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
-
-        //    //int timeDrawMap = Environment.TickCount - timeS;
-
-        //    //タイル枠描画
-        //    presenter.DrawTileBorder(tileList, viewParam);
-
-        //    //選択座標点追加描画
-        //    presenter.DrawPoint(status.clickedLatLon, viewParam, PointType.Clicked);
-        //    presenter.DrawPoint(status.nearestLatLon, viewParam, PointType.Nearest);
-        //    presenter.DrawPoint(status.selectedLatLon, viewParam, PointType.Selected);
-
-        //    //ルート形状描画
-        //    presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
-
-        //    //中心十字描画
-        //    presenter.DrawCenterMark(viewParam);
-
-        //    //描画エリア更新
-        //    presenter.UpdateImage();
-        //    //int timeUpdateImage = Environment.TickCount - timeS;
-
-
-        //    //presenter.PrintLog(2, $"Draw:{timeDrawMap},ImgUpdate:{timeUpdateImage}");
-        //}
 
         public void RefreshDrawArea()
         {
@@ -716,10 +528,17 @@ namespace Akichko.libMapView
         public void ShowAttribute()
         { }
 
+        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
     public interface IInputBoundary
     {
+        InteractorStatus Status { get; set; }
+
         //開始・終了
         void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi);
         //void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, InteractorSettings settings);
@@ -740,7 +559,9 @@ namespace Akichko.libMapView
         //void SetNearestObj(PolyLinePos nearestPos);
 
         //描画
-        void Paint();
+        void Paint(IInputBoundary preInteractor = null);
+        int MakeImage(IInputBoundary preInteractor = null);
+        void UpdateImage();
         void RefreshDrawArea();
 
         //検索

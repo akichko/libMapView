@@ -35,6 +35,7 @@ namespace Akichko.libMapView
     public class Controller
     {
         protected IInputBoundary interactor;
+        protected IInputBoundary interactorBg;
         ViewParam viewParam;
 
         /* 初期設定 **********************************************************/
@@ -61,9 +62,16 @@ namespace Akichko.libMapView
             interactor.OpenFile(fileName, mapMgr, drawApi);
         }
 
-        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
+        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactor.OpenBgFile(fileName, mapMgr, drawApi, presenter, settingsBg);
+            interactorBg.OpenFile(fileName, mapMgr, drawApi);
+            interactorBg.RefreshDrawArea();
+        }
+
+        public void SetInteractorBg(IInputBoundary interactorBg)
+        {
+            this.interactorBg = interactorBg;
+            interactorBg.SetViewParam(viewParam);
         }
 
         public void Shutdown()
@@ -167,18 +175,33 @@ namespace Akichko.libMapView
         public async void Paint()
         {
             var task = interactor.RefreshMapCacheAsync();
-
-            //var taskBg = interactor.RefreshMapCacheAsync(true);
+            var taskBg = interactorBg?.RefreshMapCacheAsync() ?? Task.FromResult(0);
 
             //同期　⇒しないとスレッドセーフ懸念
             //task.Wait();
 
-            interactor.Paint();
+            if (interactorBg == null)
+            {
+                interactor.Paint();
+            }
+            else
+            {
+                if (!interactor.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
+                    return;
+
+                interactor.Status.isPaintNeeded = true;
+                interactorBg.Status.isPaintNeeded = true;
+
+                interactorBg.MakeImage();
+                interactor.MakeImage(interactorBg);
+
+                interactor.UpdateImage();
+            }
 
             try
             {
                 await task.ConfigureAwait(false);
-               // await taskBg;
+                await taskBg.ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -189,6 +212,7 @@ namespace Akichko.libMapView
         public void RefreshDrawArea()
         {
             interactor.RefreshDrawArea();
+            interactorBg?.RefreshDrawArea();
         }
 
         public void SetSelectedLatLon(LatLon latlon)
