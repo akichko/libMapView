@@ -141,7 +141,7 @@ namespace Akichko.libMapView
             //UpdateImage();
 
             int exeTime = Environment.TickCount - timeS;
-            //presenter.PrintLog(1, $"Paint:{exeTime}");
+            presenter.PrintLog(1, $"Draw:{exeTime}");
 
             return 0;
         }
@@ -178,17 +178,11 @@ namespace Akichko.libMapView
         //描画メイン
         public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp = -1)
         {
-            //設定
-            //presenter.SetViewSettings(settings);
-
-            //Graphics初期化
-            //presenter.InitializeGraphics(settings, viewParam);
-
             //背景形状を描画
             presenter.DrawBackGround(viewParam);
 
             //各タイルを描画
-            presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
+            presenter.DrawTiles(tileList, filter, viewParam, timeStamp = -1);
 
             //タイル枠描画
             presenter.DrawTileBorder(tileList, viewParam);
@@ -632,7 +626,7 @@ namespace Akichko.libMapView
 
         //フィルタ
         public CmnObjFilter drawMapObjFilter = null;
-        public long timeStamp;
+        public long timeStamp = -1;
 
         public InteractorSettings()
         {

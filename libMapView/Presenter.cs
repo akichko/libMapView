@@ -130,7 +130,7 @@ namespace Akichko.libMapView
         {
             if (settings.isTileBorderDisp)
             {
-                tileList.ForEach(x => drawApi.DrawObj(x.ToCmnObjHandle(x), viewParam));
+                tileList.ForEach(x => drawApi.DrawObj2(x.ToCmnObjHandle(x), viewParam));
             }
         }
 
@@ -209,7 +209,7 @@ namespace Akichko.libMapView
 
         public int DrawMapObj(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            drawApi.DrawObj(objHdl, viewParam);
+            drawApi.DrawObj2(objHdl, viewParam);
 
             return 0;
         }
@@ -336,13 +336,22 @@ namespace Akichko.libMapView
         void PrintLog(int logType, string logStr);
     }
 
-    public interface IDraw
+    public interface IDrawStyle
     {
         void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp);
         LineStyle GetLineStyleSelected();
         LineStyle GetLineStyleAttrSelected();
         LineStyle GetLineStyleReffered(int objRefType);
         LineStyle GetLineStyle();
+    }
+
+    public class DefaultStyle : IDrawStyle
+    {
+        public virtual void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp) { }
+        public virtual LineStyle GetLineStyleSelected() => new LineStyle(Color.Red, (float)5.0);
+        public virtual LineStyle GetLineStyleAttrSelected() => new LineStyle(Color.DarkGreen, (float)4.0);
+        public virtual LineStyle GetLineStyleReffered(int objRefType) => new LineStyle(Color.DarkOrange, (float)4.0);
+        public virtual LineStyle GetLineStyle() => new LineStyle(Color.LightGray, (float)1.0);
     }
 
     /* 描画用抽象クラス ****************************************************************************************/
@@ -392,20 +401,28 @@ namespace Akichko.libMapView
 
         public virtual void DrawObj2(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            LineStyle lineStyle;
-            IDraw drawObj = (IDraw)objHdl.obj;
+            if (objHdl.obj is not IDrawStyle)
+            {
+                DrawObj(objHdl, viewParam);
+                return;
+            }
 
-            if (ReferenceEquals(selectObjHdl, objHdl))
+            LineStyle lineStyle;
+            IDrawStyle drawObj = (IDrawStyle)objHdl.obj;
+
+            if (selectObjHdl != null && selectObjHdl.IsEqualTo(objHdl))
+                //if (ReferenceEquals(selectObjHdl, objHdl))
                 lineStyle = drawObj.GetLineStyleSelected();
 
             //属性リスト選択中オブジェクト
-            else if (refObjList?.Count(x => ReferenceEquals(x.objHdl, objHdl)) > 0)
+            else if (selectAttr != null && selectObjHdl.IsEqualTo(objHdl))
                 lineStyle = drawObj.GetLineStyleAttrSelected();
 
             //関連オブジェクト
             else if (refObjList?.Count(x => x.objHdl.IsEqualTo(objHdl)) > 0)
             {
-                lineStyle = drawObj.GetLineStyleReffered(refObjList.Where(x => x.objHdl.IsEqualTo(objHdl)).First().objRefType);             
+                int refObjType = refObjList.Where(x => x.objHdl.IsEqualTo(objHdl)).First().objRefType;
+                lineStyle = drawObj.GetLineStyleReffered(refObjType);             
             }
             else
                 lineStyle = drawObj.GetLineStyle();
