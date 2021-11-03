@@ -252,7 +252,7 @@ namespace Akichko.libMapView
         public void LeftClick(int x, int y)
         {
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
-            CmnObjHandle nearestObj = interactor.SearchObject(clickedLatLon);
+            CmnObjHandle nearestObj = interactorPtr.SearchObject(clickedLatLon);
 
             //PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj?.Geometry);
 
@@ -275,21 +275,27 @@ namespace Akichko.libMapView
 
 
         //検索
-        public void SearchObject(uint tileId, uint objType, UInt64 objId)
+        public void SearchObject(uint tileId, uint objType, UInt64 objId, bool jump = true)
         {
-            interactorPtr.SearchObject(tileId, objType, objId);
+            CmnObjHandle searchedObjHdl = interactorPtr.SearchObject(tileId, objType, objId);
+            if (searchedObjHdl != null && jump)
+            {
+                LatLon latlon = searchedObjHdl.GetCenterLatLon();
+                if (latlon != null)
+                    interactorPtr.SetViewCenter(latlon);
+            }
             interactorPtr.RefreshDrawArea();
 
         }
 
-        public void SearchObject(uint tileId, uint objType, UInt16 objIndex)
+        public void SearchObject(uint tileId, uint objType, UInt16 objIndex, bool jump = true)
         {
             CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
-            if (searchedObjHdl != null)
+            if (searchedObjHdl != null && jump)
             {
                 LatLon latlon = searchedObjHdl.GetCenterLatLon();
                 if (latlon != null)
-                    interactor.SetViewCenter(latlon);
+                    interactorPtr.SetViewCenter(latlon);
             }
             interactorPtr.RefreshDrawArea();
 
@@ -302,7 +308,7 @@ namespace Akichko.libMapView
             {
                 LatLon latlon = searchedObjHdl.GetCenterLatLon();
                 if (latlon != null)
-                    interactor.SetViewCenter(latlon);
+                    interactorPtr.SetViewCenter(latlon);
             }
             interactorPtr.RefreshDrawArea();
 
@@ -359,5 +365,11 @@ namespace Akichko.libMapView
             SetBoundaryGeometry(BoundaryList);
             RefreshDrawArea();
         }
+    }
+
+
+    public class TypeListCtl
+    {
+        Dictionary<string, uint> objTypeDic;
     }
 }

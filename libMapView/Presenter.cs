@@ -209,7 +209,7 @@ namespace Akichko.libMapView
 
         public int DrawMapObj(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            drawApi.DrawObj2(objHdl, viewParam);
+            drawApi.DrawObj3(objHdl, viewParam);
 
             return 0;
         }
@@ -223,7 +223,9 @@ namespace Akichko.libMapView
 
         public void ShowAttribute(CmnObjHandle objHdl)
         {
-            viewAccess.DispListView(objHdl.GetAttributeListItem());
+            if (objHdl == null)
+                return;
+            viewAccess.DispListView(objHdl?.GetAttributeListItem());
         }
 
         public void SetSelectedObjHdl(CmnObjHandle objHdl, PolyLinePos nearestPos = null)
@@ -347,11 +349,48 @@ namespace Akichko.libMapView
 
     public class DefaultStyle : IDrawStyle
     {
+        LineStyle selected;
+        LineStyle attSelected;
+        LineStyle reffered;
+        LineStyle normal;
+
+        public DefaultStyle()
+        {
+            this.selected = new LineStyle(Color.Red, (float)5.0);
+            this.attSelected = new LineStyle(Color.DarkGreen, (float)4.0);
+            this.reffered = new LineStyle(Color.DarkOrange, (float)4.0);
+            this.normal = new LineStyle(Color.LightGray, (float)1.0);
+        }
+
         public virtual void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp) { }
-        public virtual LineStyle GetLineStyleSelected() => new LineStyle(Color.Red, (float)5.0);
-        public virtual LineStyle GetLineStyleAttrSelected() => new LineStyle(Color.DarkGreen, (float)4.0);
-        public virtual LineStyle GetLineStyleReffered(int objRefType) => new LineStyle(Color.DarkOrange, (float)4.0);
-        public virtual LineStyle GetLineStyle() => new LineStyle(Color.LightGray, (float)1.0);
+        public virtual LineStyle GetLineStyleSelected() => selected;
+        public virtual LineStyle GetLineStyleAttrSelected() => attSelected;
+        public virtual LineStyle GetLineStyleReffered(int objRefType) => reffered;
+        public virtual LineStyle GetLineStyle() => normal;
+    }
+
+    public class CmnDrawStyle
+    {
+        protected LineStyle defaultLineStyle;
+        protected Pen defaultPen;
+        protected PointStyle defaultPointStyle;
+
+        public CmnDrawStyle()
+        {
+            defaultLineStyle = new LineStyle(Color.Black, (float)1.0);
+            defaultPen = defaultLineStyle.CreatePen();
+            defaultPointStyle = new PointStyle(Color.DodgerBlue, 6, Color.White, 3);
+        }
+
+        public virtual Pen GetPen(CmnObjHandle objHdl, ObjDrawParam drawParam)
+        {
+            return defaultPen;
+        }
+
+        public virtual PointStyle GetPointStyle(CmnObjHandle objHdl, ObjDrawParam drawParam)
+        {
+            return defaultPointStyle;
+        }
     }
 
     /* 描画用抽象クラス ****************************************************************************************/
@@ -359,6 +398,7 @@ namespace Akichko.libMapView
     {
         protected Image drawAreaBitmap;
         protected Graphics g;
+        protected CmnDrawStyle drawStyle;
 
         //個別描画用
         public CmnObjHandle selectObjHdl = null;
@@ -399,6 +439,46 @@ namespace Akichko.libMapView
             return;
         }
 
+        public virtual void DrawObj3(CmnObjHandle objHdl, ViewParam viewParam)
+        {
+            ObjDrawParam drawParam = GetObjDrawParam(objHdl);
+
+            switch (objHdl.obj.GeoType)
+            {
+                case GeometryType.Point:
+                    PointStyle pointStyle = drawStyle.GetPointStyle(objHdl, drawParam);
+                    DrawPoint(objHdl.Geometry[0], pointStyle, viewParam);
+                    break;
+
+                default:
+                    Pen pen = drawStyle.GetPen(objHdl, drawParam);
+                    DrawPolyline(objHdl.Geometry, pen, viewParam);
+                    break;
+            }
+            return;
+        }
+
+
+        public virtual ObjDrawParam GetObjDrawParam(CmnObjHandle objHdl)
+        {
+            //選択中オブジェクト
+            if (selectObjHdl != null && selectObjHdl.IsEqualTo(objHdl))
+                return new ObjDrawParam(ObjDrawStatus.Selected);
+
+            //属性リスト選択中オブジェクト
+            if (selectAttr != null && selectAttr.IsEqualTo(objHdl))
+                return new ObjDrawParam(ObjDrawStatus.AttrSelected);
+
+            //関連オブジェクト
+            List<int> refObjTypeList = refObjList?.Where(x => x.objHdl.IsEqualTo(objHdl)).Select(x => x.objRefType).ToList();
+            if (refObjTypeList != null && refObjTypeList.Count > 0)
+                return new ObjDrawParam(ObjDrawStatus.Reffered, refObjTypeList);
+
+            //その他
+            return new ObjDrawParam(ObjDrawStatus.Normal);
+        }
+
+
         public virtual void DrawObj2(CmnObjHandle objHdl, ViewParam viewParam)
         {
             if (objHdl.obj is not IDrawStyle)
@@ -410,23 +490,24 @@ namespace Akichko.libMapView
             LineStyle lineStyle;
             IDrawStyle drawObj = (IDrawStyle)objHdl.obj;
 
+            //選択中オブジェクト
             if (selectObjHdl != null && selectObjHdl.IsEqualTo(objHdl))
                 //if (ReferenceEquals(selectObjHdl, objHdl))
                 lineStyle = drawObj.GetLineStyleSelected();
 
             //属性リスト選択中オブジェクト
-            else if (selectAttr != null && selectObjHdl.IsEqualTo(objHdl))
+            else if (selectAttr != null && selectAttr.IsEqualTo(objHdl))
                 lineStyle = drawObj.GetLineStyleAttrSelected();
 
             //関連オブジェクト
             else if (refObjList?.Count(x => x.objHdl.IsEqualTo(objHdl)) > 0)
             {
                 int refObjType = refObjList.Where(x => x.objHdl.IsEqualTo(objHdl)).First().objRefType;
-                lineStyle = drawObj.GetLineStyleReffered(refObjType);             
+                lineStyle = drawObj.GetLineStyleReffered(refObjType);
             }
             else
                 lineStyle = drawObj.GetLineStyle();
-            
+
             //lineStyle = new LineStyle(Color.Black, 1);
 
 
@@ -553,6 +634,30 @@ namespace Akichko.libMapView
         //}
     }
 
+
+
+    public enum ObjDrawStatus
+    {
+        Normal,
+        Selected,
+        AttrSelected,
+        Reffered
+
+    }
+
+    public class ObjDrawParam
+    {
+        public ObjDrawStatus status;
+        public List<int> objRefType;
+
+        public ObjDrawParam(ObjDrawStatus status, List<int> objRefType = null)
+        {
+            this.status = status;
+            this.objRefType = objRefType;
+        }
+    }
+
+
     public class PointStyle
     {
         public Color outerColor;
@@ -582,6 +687,18 @@ namespace Akichko.libMapView
             this.width = width;
             this.isArrowStartCap = isArrowStartCap;
             this.isArrowEndCap = isArrowEndCap;
+        }
+
+
+        public Pen CreatePen()
+        {
+            Pen pen = new Pen(color, width);
+            if (isArrowStartCap)
+                pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+            if (isArrowEndCap)
+                pen.CustomStartCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
+
+            return pen;
         }
     }
 
@@ -668,5 +785,70 @@ namespace Akichko.libMapView
 
     }
 
+
+    public class DrawStyle<T>
+    {
+        protected LineStyle defaultStyle;
+        protected Pen defaultPen;
+        protected Dictionary<T, Pen> penDic;
+
+        public DrawStyle()
+        {
+            defaultStyle = new LineStyle(Color.LightGray, (float)1.0);
+            defaultPen = defaultStyle.CreatePen();
+
+            penDic = new Dictionary<T, Pen>();
+        }
+
+        public Pen GetPen(T type)
+        {
+            if (penDic.ContainsKey(type))
+                return penDic[type];
+
+            return defaultPen;
+        }
+
+
+    }
+
+    public abstract class ObjDrawStyle : DrawStyle<ObjDrawStatus>
+    {
+        LineStyle selected;
+        LineStyle attSetelcted;
+        Pen penSelected;
+        Pen penAttSelected;
+
+        public ObjDrawStyle()
+        {
+            this.selected = new LineStyle(Color.Red, (float)5.0);
+            this.attSetelcted = new LineStyle(Color.Orange, (float)4.0);
+
+            penSelected = selected.CreatePen();
+            penAttSelected = attSetelcted.CreatePen();
+
+            penDic[ObjDrawStatus.Selected] = penSelected;
+            penDic[ObjDrawStatus.AttrSelected] = penAttSelected;
+        }
+
+        public Pen GetPen(CmnObjHandle objHdl, ObjDrawParam drawParam)
+        {
+            switch (drawParam.status)
+            {
+                case ObjDrawStatus.Reffered:
+                    return GetRefferedPen(drawParam.objRefType);
+
+                case ObjDrawStatus.Normal:
+                    return GetNormalPen(objHdl);
+
+                default:
+                    return penDic[drawParam.status];
+            }
+
+        }
+        
+        public abstract Pen GetRefferedPen(List<int> reftype);
+        public abstract Pen GetNormalPen(CmnObjHandle objHdl);
+
+    }
 
 }

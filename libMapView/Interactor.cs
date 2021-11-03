@@ -338,7 +338,7 @@ namespace Akichko.libMapView
             if (!status.drawEnable)
                 return null;
 
-            status.selectedHdl = mapMgr.SearchObj(tileId, objType, objId);
+            status.selectedHdl = mapMgr.SearchObj(tileId, objType, objId, settings.timeStamp);
             presenter.SetSelectedObjHdl(status.selectedHdl);
             presenter.ShowAttribute(status.selectedHdl);
 
@@ -352,7 +352,7 @@ namespace Akichko.libMapView
             if (!status.drawEnable)
                 return null;
 
-            status.selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex);
+            status.selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex, settings.timeStamp);
             presenter.SetSelectedObjHdl(status.selectedHdl);
             presenter.ShowAttribute(status.selectedHdl);
 
@@ -518,6 +518,32 @@ namespace Akichko.libMapView
         }
 
 
+        //public virtual RouteResult CalcRoute(LatLon orgLatLon)
+        //{
+        //    CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
+
+        //    routeMgr.orgLatLon = orgLatLon;
+
+        //    //Prepare
+        //    routeMgr.Prepare2(false);
+
+        //    //計算
+        //    RouteResult routeCalcResult = routeMgr.CalcRoute2();
+
+        //    if (routeCalcResult.resultCode != ResultCode.Success)
+        //    {
+        //        SetRouteGeometry(null);
+        //        return routeCalcResult;
+        //    }
+
+        //    status.route = routeCalcResult.route.Select(x => x.DLinkHdl);
+        //    presenter.OutputRoute(status.route);
+
+        //    SetRouteGeometry(routeMgr.GetResult());
+
+        //    return routeCalcResult;
+        //}
+
 
         public void ShowAttribute()
         { }
@@ -561,6 +587,7 @@ namespace Akichko.libMapView
         //検索
         CmnObjHandle SearchObject(LatLon baseLatLon);
         CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
+        CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex);
         CmnObjHandle SearchObject(CmnSearchKey key);
         CmnObjHandle SearchAttrObject(CmnSearchKey key);
         RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
