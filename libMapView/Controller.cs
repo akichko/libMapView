@@ -112,6 +112,7 @@ namespace Akichko.libMapView
         public void SetViewCenter(LatLon latlon)
         {
             interactor.SetViewCenter(latlon);
+            interactorBg?.SetViewCenter(latlon);
             RefreshDrawArea();
         }
 
@@ -119,14 +120,16 @@ namespace Akichko.libMapView
         public void MoveViewCenter(int x, int y)
         {
             viewParam.MoveViewCenter(x, y);
-            interactorPtr.SetViewParam(viewParam);
+            interactor.SetViewParam(viewParam);
+            interactorBg?.SetViewParam(viewParam);
             RefreshDrawArea();
         }
 
         public void MoveViewCenter(LatLon relLatLon)
         {
             viewParam.MoveViewCenter(relLatLon);
-            interactorPtr.SetViewParam(viewParam);
+            interactor.SetViewParam(viewParam);
+            interactorBg?.SetViewParam(viewParam);
             RefreshDrawArea();
         }
 
@@ -229,7 +232,7 @@ namespace Akichko.libMapView
 
         public void SetSelectedLatLon(LatLon latlon)
         {
-            interactorPtr.SetSelectedLatLon(latlon);
+            interactorPtr.SetAttrSelectedLatLon(latlon);
         }
 
         public void SetRouteGeometry(LatLon[] routeGeometry)
@@ -246,6 +249,12 @@ namespace Akichko.libMapView
         //{
         //    interactor.SetRouteObjList(routeObjList);
         //}
+
+        public void ClearParam()
+        {
+            interactor.ClearStatus();
+                
+        }
 
         //選択
 
@@ -315,10 +324,26 @@ namespace Akichko.libMapView
         }
 
 
+
+        public void SearchRandomObject(uint objType)
+        {
+            CmnObjHandle obj = interactor.SearchRandomObject(objType);
+
+            LatLon latlon = obj?.GetCenterLatLon();
+
+            if(latlon != null)
+                interactor.SetViewCenter(latlon);
+        }
+
+        public void SearchTile(uint tileId)
+        {
+            interactor.SetViewCenter(tileId);
+        }
+
         public void SelectAttribute(CmnSearchKey key)
         {
             CmnObjHandle attrObjHdl = interactor.SearchAttrObject(key);
-            interactorPtr.SetSelectedAttr(attrObjHdl);
+            interactorPtr.SetAttrSelectedObj(attrObjHdl);
         }
 
 

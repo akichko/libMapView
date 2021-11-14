@@ -307,6 +307,11 @@ namespace Akichko.libMapView
             viewAccess.DispRoute(route.ToList());
         }
 
+        public void SetTimeStampRange(TimeStampRange timeStampRange)
+        {
+            viewAccess.SetTimeStampRange(timeStampRange);
+        }
+
 
 
         //public void DispDest(CmnObjHandle linkHdl)
@@ -314,7 +319,6 @@ namespace Akichko.libMapView
         //    viewAccess.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
         //}
     }
-
 
 
     public interface IViewApi
@@ -336,46 +340,17 @@ namespace Akichko.libMapView
 
         //ログ出力
         void PrintLog(int logType, string logStr);
+        void SetTimeStampRange(TimeStampRange timeStampRange);
     }
 
-    public interface IDrawStyle
-    {
-        void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp);
-        LineStyle GetLineStyleSelected();
-        LineStyle GetLineStyleAttrSelected();
-        LineStyle GetLineStyleReffered(int objRefType);
-        LineStyle GetLineStyle();
-    }
 
-    public class DefaultStyle : IDrawStyle
-    {
-        LineStyle selected;
-        LineStyle attSelected;
-        LineStyle reffered;
-        LineStyle normal;
-
-        public DefaultStyle()
-        {
-            this.selected = new LineStyle(Color.Red, (float)5.0);
-            this.attSelected = new LineStyle(Color.DarkGreen, (float)4.0);
-            this.reffered = new LineStyle(Color.DarkOrange, (float)4.0);
-            this.normal = new LineStyle(Color.LightGray, (float)1.0);
-        }
-
-        public virtual void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp) { }
-        public virtual LineStyle GetLineStyleSelected() => selected;
-        public virtual LineStyle GetLineStyleAttrSelected() => attSelected;
-        public virtual LineStyle GetLineStyleReffered(int objRefType) => reffered;
-        public virtual LineStyle GetLineStyle() => normal;
-    }
-
-    public class CmnDrawStyle
+    public class CmnDrawStyleMng
     {
         protected LineStyle defaultLineStyle;
         protected Pen defaultPen;
         protected PointStyle defaultPointStyle;
 
-        public CmnDrawStyle()
+        public CmnDrawStyleMng()
         {
             defaultLineStyle = new LineStyle(Color.Black, (float)1.0);
             defaultPen = defaultLineStyle.CreatePen();
@@ -398,7 +373,7 @@ namespace Akichko.libMapView
     {
         protected Image drawAreaBitmap;
         protected Graphics g;
-        protected CmnDrawStyle drawStyle;
+        protected CmnDrawStyleMng drawStyle;
 
         //個別描画用
         public CmnObjHandle selectObjHdl = null;
@@ -481,7 +456,7 @@ namespace Akichko.libMapView
 
         public virtual void DrawObj2(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            if (objHdl.obj is not IDrawStyle)
+            if (!(objHdl.obj is IDrawStyle))
             {
                 DrawObj(objHdl, viewParam);
                 return;
@@ -624,14 +599,6 @@ namespace Akichko.libMapView
             return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
         }
 
-
-
-        //public virtual RangeFilter<ushort> GetFilter(uint number) => null;
-
-        //public virtual CmnObjFilter SetFilter(ref CmnObjFilter filter, uint objType, RangeFilter<ushort> subFilter)
-        //{
-        //    return filter.AddRule(objType, subFilter);
-        //}
     }
 
 
@@ -642,7 +609,6 @@ namespace Akichko.libMapView
         Selected,
         AttrSelected,
         Reffered
-
     }
 
     public class ObjDrawParam
@@ -701,6 +667,8 @@ namespace Akichko.libMapView
             return pen;
         }
     }
+
+    /* ログ出力 ****************************************************************************************/
 
     public class LogArray
     {
@@ -849,6 +817,37 @@ namespace Akichko.libMapView
         public abstract Pen GetRefferedPen(List<int> reftype);
         public abstract Pen GetNormalPen(CmnObjHandle objHdl);
 
+    }
+
+    public interface IDrawStyle
+    {
+        void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp);
+        LineStyle GetLineStyleSelected();
+        LineStyle GetLineStyleAttrSelected();
+        LineStyle GetLineStyleReffered(int objRefType);
+        LineStyle GetLineStyle();
+    }
+
+    public class DefaultStyle : IDrawStyle
+    {
+        LineStyle selected;
+        LineStyle attSelected;
+        LineStyle reffered;
+        LineStyle normal;
+
+        public DefaultStyle()
+        {
+            this.selected = new LineStyle(Color.Red, (float)5.0);
+            this.attSelected = new LineStyle(Color.DarkGreen, (float)4.0);
+            this.reffered = new LineStyle(Color.DarkOrange, (float)4.0);
+            this.normal = new LineStyle(Color.LightGray, (float)1.0);
+        }
+
+        public virtual void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp) { }
+        public virtual LineStyle GetLineStyleSelected() => selected;
+        public virtual LineStyle GetLineStyleAttrSelected() => attSelected;
+        public virtual LineStyle GetLineStyleReffered(int objRefType) => reffered;
+        public virtual LineStyle GetLineStyle() => normal;
     }
 
 }
