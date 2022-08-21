@@ -38,24 +38,23 @@ namespace Akichko.libMapView
         protected CmnDrawApi drawApi;
         // protected ViewParam viewParam;
 
-        //Bitmap drawAreaBitmap;
-        //Graphics g;
-
-        public InteractorSettings settings;
-        public InteractorSettings Settings
-        {
-            get => settings;
-            set
-            {
-                settings = value;
-                drawApi.settings = value;
-            }
-        }
-
-        //public LatLon selectedLatLon;
+        //public InteractorSettings settings;
         public LatLon[] routeGeometry = null; //削除予定
         public List<LatLon[]> boundaryList = null; //削除予定
 
+        //Bitmap drawAreaBitmap;
+        //Graphics g;
+        //public InteractorSettings Settings
+        //{
+        //    get => settings;
+        //    set
+        //    {
+        //        settings = value;
+        //        drawApi.settings = value;
+        //    }
+        //}
+
+        //public LatLon selectedLatLon;
         //パラメータ
         //public bool isDrawTileBorder = true;
         //public bool isDrawOneWay = true;
@@ -78,7 +77,7 @@ namespace Akichko.libMapView
 
         public void SetViewSettings(InteractorSettings settings)
         {
-            this.settings = settings;
+            //this.settings = settings;
             drawApi.settings = settings;
         }
 
@@ -88,7 +87,7 @@ namespace Akichko.libMapView
         //初期化
         public void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, IOutputBoundary presenter = null)
         {
-            this.settings = settings;
+            //this.settings = settings;
             drawApi.settings = settings;
             drawApi.InitializeGraphics(viewParam, ((Presenter)presenter)?.drawApi);
             //drawAreaBitmap = viewParam.CreateBitmap();
@@ -102,9 +101,9 @@ namespace Akichko.libMapView
             //各タイルを描画
             foreach (CmnTile drawTile in tileList)
             {
-                drawTile.GetObjGroupList(filter)
+                drawTile.GetObjGroups(filter)
                     .Where(x => x.isDrawable)
-                    .Select(x => x.GetIEnumerableDrawObjs(filter?.GetSubFilter(x.Type)))
+                    .Select(x => x.GetDrawObjs(filter?.GetSubFilter(x.Type)))
                     .Where(x => x != null)
                     .SelectMany(x => x)
                     .Where(x => x.CheckTimeStamp(timeStamp))
@@ -116,22 +115,19 @@ namespace Akichko.libMapView
         public void DrawBackGround(ViewParam viewParam)
         {
             //背景形状を描画
-            if (boundaryList != null && settings.isAdminBoundaryDisp)
+            if (boundaryList != null)
             {
                 Pen pen = new Pen(Color.Gray, 1);
                 boundaryList.ForEach(x =>
                 {
-                    drawApi.DrawPolyline(x, pen, viewParam);
+                    drawApi.DrawPolyline(x, pen);
                 });
             }
         }
 
         public void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam)
         {
-            if (settings.isTileBorderDisp)
-            {
-                tileList.ForEach(x => drawApi.DrawObj2(x.ToCmnObjHandle(x), viewParam));
-            }
+            tileList.ForEach(x => drawApi.DrawObj2(x.ToCmnObjHandle(x)));
         }
 
         //座標点追加描画
@@ -140,23 +136,23 @@ namespace Akichko.libMapView
             switch (type)
             {
                 case PointType.Clicked:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.Yellow, 3), viewParam);
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.Yellow, 3));
                     break;
 
                 case PointType.Selected:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Green, 4), viewParam);
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Green, 4));
                     break;
 
                 case PointType.Nearest:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Red, 4), viewParam);
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Red, 4));
                     break;
 
                 case PointType.None:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3), viewParam);
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3));
                     break;
 
                 default:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3), viewParam);
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3));
                     break;
             };
         }
@@ -175,29 +171,26 @@ namespace Akichko.libMapView
         {
             if (polyline == null)
                 return;
-            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96, 255, 0, 0), 20, false, true), viewParam);
+            drawApi.DrawPolyline(polyline, new LineStyle(Color.FromArgb(96, 255, 0, 0), 20, false, true));
         }
 
         //描画エリア中心＋描画
         public void DrawCenterMark(ViewParam viewParam)
         {
             float size = 5;
-            if (settings.isCenterMarkDisp)
-            {
-                Pen pen = new Pen(Color.Red, 2);
-                PointF[] points = {
+            Pen pen = new Pen(Color.Red, 2);
+            PointF[] points = {
                     new PointF(viewParam.Width_2 - size, viewParam.Height_2),
                     new PointF(viewParam.Width_2 + size, viewParam.Height_2) };
 
-                drawApi.DrawLines(points, pen);
+            drawApi.DrawLines(points, pen);
 
-                points = new PointF[]{
+            points = new PointF[]{
                     new PointF(viewParam.Width_2, viewParam.Height_2 - size),
                     new PointF(viewParam.Width_2, viewParam.Height_2 + size) };
 
-                drawApi.DrawLines(points, pen);
+            drawApi.DrawLines(points, pen);
 
-            }
         }
 
         //描画結果反映
@@ -209,7 +202,7 @@ namespace Akichko.libMapView
 
         public int DrawMapObj(CmnObjHandle objHdl, ViewParam viewParam)
         {
-            drawApi.DrawObj3(objHdl, viewParam);
+            drawApi.DrawObj3(objHdl);
 
             return 0;
         }
@@ -373,6 +366,7 @@ namespace Akichko.libMapView
     {
         protected Image drawAreaBitmap;
         protected Graphics g;
+        protected ViewParam viewParam;
         protected CmnDrawStyleMng drawStyle;
 
         //個別描画用
@@ -387,6 +381,8 @@ namespace Akichko.libMapView
         //初期化
         public void InitializeGraphics(ViewParam viewParam, CmnDrawApi preDrawApi = null)
         {
+            this.viewParam = viewParam;
+
             if (preDrawApi != null)
             {
                 drawAreaBitmap = preDrawApi.drawAreaBitmap;
@@ -404,9 +400,9 @@ namespace Akichko.libMapView
         public Image GetDrawAreaBitMap() => drawAreaBitmap;
 
         //オブジェクト描画
-        public virtual void DrawObj(CmnObjHandle objHdl, ViewParam viewParam)
+        public virtual void DrawObj(CmnObjHandle objHdl)
         {
-            PointF[] pointF = CalcPolylineInDrawArea(objHdl.Geometry, viewParam);
+            PointF[] pointF = viewParam.CalcPolylineInDrawArea(objHdl.Geometry);
 
             Pen pen = GetPen(objHdl);
             g.DrawLines(pen, pointF);
@@ -414,7 +410,7 @@ namespace Akichko.libMapView
             return;
         }
 
-        public virtual void DrawObj3(CmnObjHandle objHdl, ViewParam viewParam)
+        public virtual void DrawObj3(CmnObjHandle objHdl)
         {
             ObjDrawParam drawParam = GetObjDrawParam(objHdl);
 
@@ -422,12 +418,12 @@ namespace Akichko.libMapView
             {
                 case GeometryType.Point:
                     PointStyle pointStyle = drawStyle.GetPointStyle(objHdl, drawParam);
-                    DrawPoint(objHdl.Geometry[0], pointStyle, viewParam);
+                    DrawPoint(objHdl.Geometry[0], pointStyle);
                     break;
 
                 default:
                     Pen pen = drawStyle.GetPen(objHdl, drawParam);
-                    DrawPolyline(objHdl.Geometry, pen, viewParam);
+                    DrawPolyline(objHdl.Geometry, pen);
                     break;
             }
             return;
@@ -454,11 +450,11 @@ namespace Akichko.libMapView
         }
 
 
-        public virtual void DrawObj2(CmnObjHandle objHdl, ViewParam viewParam)
+        public virtual void DrawObj2(CmnObjHandle objHdl)
         {
             if (!(objHdl.obj is IDrawStyle))
             {
-                DrawObj(objHdl, viewParam);
+                DrawObj(objHdl);
                 return;
             }
 
@@ -486,7 +482,7 @@ namespace Akichko.libMapView
             //lineStyle = new LineStyle(Color.Black, 1);
 
 
-            DrawPolyline(objHdl.Geometry, lineStyle, viewParam);
+            DrawPolyline(objHdl.Geometry, lineStyle);
 
             return;
         }
@@ -511,11 +507,11 @@ namespace Akichko.libMapView
 
 
         //ライン描画
-        public void DrawPolyline(LatLon[] polyline, Pen pen, ViewParam viewParam)
+        public void DrawPolyline(LatLon[] polyline, Pen pen)
         {
             if (polyline == null)
                 return;
-            PointF[] pointF = CalcPolylineInDrawArea(polyline, viewParam);
+            PointF[] pointF = viewParam.CalcPolylineInDrawArea(polyline);
 
             if (polyline.Length == 1)
                 g.DrawLines(pen, pointF);
@@ -525,13 +521,13 @@ namespace Akichko.libMapView
             return;
         }
 
-        public void DrawPolyline(LatLon[] polyline, LineStyle style, ViewParam viewParam)
+        public void DrawPolyline(LatLon[] polyline, LineStyle style)
         {
             Pen pen = new Pen(style.color, style.width);
             if (style.isArrowEndCap)
                 pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
 
-            DrawPolyline(polyline, pen, viewParam);
+            DrawPolyline(polyline, pen);
         }
 
         public void DrawLines(PointF[] pointF, Pen pen)
@@ -541,38 +537,41 @@ namespace Akichko.libMapView
 
 
         //ポイント描画
-        public virtual void DrawPoint(LatLon latlon, ViewParam viewParam)
+        public virtual void DrawPoint(LatLon latlon)
         {
             if (latlon == null)
                 return;
-            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
+            PointF pointF = viewParam.CalcPointInDrawArea(latlon);
 
             //色は暫定
-            DrawFillCircle(pointF, Color.DodgerBlue, 6);
-            DrawFillCircle(pointF, Color.Yellow, 3);
+            DrawFillCircle(pointF, new SolidBrush(Color.DodgerBlue), 6);
+            DrawFillCircle(pointF, new SolidBrush(Color.Yellow), 3);
         }
 
-        public virtual void DrawPoint(LatLon latlon, PointStyle style, ViewParam viewParam)
+        public virtual void DrawPoint(LatLon latlon, PointStyle style)
         {
             if (latlon == null)
                 return;
-            PointF pointF = CalcPointInDrawArea(latlon, viewParam);
+            PointF pointF = viewParam.CalcPointInDrawArea(latlon);
 
             //色は暫定
-            DrawFillCircle(pointF, style.outerColor, style.outerRadius);
-            DrawFillCircle(pointF, style.innerColor, style.innerRadius);
+            DrawFillCircle(pointF, new SolidBrush(style.outerColor), style.outerRadius);
+            DrawFillCircle(pointF, new SolidBrush(style.innerColor), style.innerRadius);
         }
 
         protected virtual void DrawFillCircle(PointF pointF, Color color, float radius)
             => g.FillEllipse(new SolidBrush(color), pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
 
+        protected virtual void DrawFillCircle(PointF pointF, Brush brush, float radius)
+            => g.FillEllipse(brush, pointF.X - radius, pointF.Y - radius, radius * 2, radius * 2);
 
-        protected virtual void DrawCircle(LatLon latlon, LineStyle style, float radiusMeter, ViewParam viewParam)
+
+        protected virtual void DrawCircle(LatLon latlon, LineStyle style, float radiusMeter)
         {
             if (latlon == null)
                 return;
-            PointF pointC = CalcPointInDrawArea(latlon, viewParam);
-            PointF pointNW = CalcPointInDrawArea(latlon.GetOffsetLatLon(-radiusMeter, radiusMeter), viewParam);
+            PointF pointC = viewParam.CalcPointInDrawArea(latlon);
+            PointF pointNW = viewParam.CalcPointInDrawArea(latlon.GetOffsetLatLon(-radiusMeter, radiusMeter));
 
             float radiusX = pointC.X - pointNW.X;
             float radiusY = pointC.Y - pointNW.Y;
@@ -582,22 +581,22 @@ namespace Akichko.libMapView
         }
 
         //座標変換
-        protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
-        {
-            //相対緯度経度算出
-            double relLat = latlon.lat - viewParam.viewCenter.lat;
-            double relLon = latlon.lon - viewParam.viewCenter.lon;
+        //protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
+        //{
+        //    //相対緯度経度算出
+        //    double relLat = latlon.lat - viewParam.viewCenter.lat;
+        //    double relLon = latlon.lon - viewParam.viewCenter.lon;
 
-            return new PointF(
-                (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
-                (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
+        //    return new PointF(
+        //        (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
+        //        (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
 
-        }
+        //}
 
-        protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
-        {
-            return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
-        }
+        //protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
+        //{
+        //    return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
+        //}
 
     }
 
@@ -697,62 +696,7 @@ namespace Akichko.libMapView
     }
 
 
-    /* 不要？ ************************************************************/
-
-    public class ViewModel
-    {
-        //PictureBox
-        Image pbDrawAreaImage;
-
-        //StatusBar
-        int centerTileId;
-        LatLon clickedLatLon;
-
-        private LatLon _centerLatLon;
-
-
-        public LatLon centerLatLon
-        {
-            get { return _centerLatLon; }
-
-            set
-            {
-                _centerLatLon = value;
-
-            }
-        }
-
-    }
-
-    public class ViewModel2 : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        //PictureBox
-        Image pbDrawAreaImage;
-
-        //StatusBar
-        int centerTileId;
-        LatLon clickedLatLon;
-
-        private LatLon _centerLatLon;
-
-
-        public LatLon centerLatLon
-        {
-            get
-            {
-                return _centerLatLon;
-            }
-            set
-            {
-                _centerLatLon = value;
-
-            }
-        }
-
-    }
-
+    /* 描画スタイル ****************************************************************************************/
 
     public class DrawStyle<T>
     {
@@ -775,8 +719,6 @@ namespace Akichko.libMapView
 
             return defaultPen;
         }
-
-
     }
 
     public abstract class ObjDrawStyle : DrawStyle<ObjDrawStatus>
@@ -819,6 +761,8 @@ namespace Akichko.libMapView
 
     }
 
+
+    //削除予定
     public interface IDrawStyle
     {
         void SetArrowCap(ref LineStyle lineStyle, bool isOneWayDisp);
@@ -849,5 +793,62 @@ namespace Akichko.libMapView
         public virtual LineStyle GetLineStyleReffered(int objRefType) => reffered;
         public virtual LineStyle GetLineStyle() => normal;
     }
+
+
+    /* 不要？ ************************************************************/
+
+    //public class ViewModel
+    //{
+    //    //PictureBox
+    //    Image pbDrawAreaImage;
+
+    //    //StatusBar
+    //    int centerTileId;
+    //    LatLon clickedLatLon;
+
+    //    private LatLon _centerLatLon;
+
+
+    //    public LatLon centerLatLon
+    //    {
+    //        get { return _centerLatLon; }
+
+    //        set
+    //        {
+    //            _centerLatLon = value;
+
+    //        }
+    //    }
+
+    //}
+
+    //public class ViewModel2 : INotifyPropertyChanged
+    //{
+    //    public event PropertyChangedEventHandler PropertyChanged;
+
+    //    //PictureBox
+    //    Image pbDrawAreaImage;
+
+    //    //StatusBar
+    //    int centerTileId;
+    //    LatLon clickedLatLon;
+
+    //    private LatLon _centerLatLon;
+
+
+    //    public LatLon centerLatLon
+    //    {
+    //        get
+    //        {
+    //            return _centerLatLon;
+    //        }
+    //        set
+    //        {
+    //            _centerLatLon = value;
+
+    //        }
+    //    }
+
+    //}
 
 }

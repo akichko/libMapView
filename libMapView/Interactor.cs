@@ -179,13 +179,15 @@ namespace Akichko.libMapView
         public void DrawMap(List<CmnTile> tileList, ViewParam viewParam, CmnObjFilter filter, long timeStamp = -1)
         {
             //背景形状を描画
-            presenter.DrawBackGround(viewParam);
+            if(settings.isAdminBoundaryDisp)
+                presenter.DrawBackGround(viewParam);
 
             //各タイルを描画
             presenter.DrawTiles(tileList, filter, viewParam, timeStamp);
 
             //タイル枠描画
-            presenter.DrawTileBorder(tileList, viewParam);
+            if (settings.isTileBorderDisp)
+                presenter.DrawTileBorder(tileList, viewParam);
 
             //選択座標点追加描画
             presenter.DrawPoint(status.clickedLatLon, viewParam, PointType.Clicked);
@@ -196,7 +198,8 @@ namespace Akichko.libMapView
             presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
 
             //中心十字描画
-            presenter.DrawCenterMark(viewParam);
+            if (settings.isCenterMarkDisp)
+                presenter.DrawCenterMark(viewParam);
         }
 
         public void RefreshDrawArea()
@@ -580,10 +583,10 @@ namespace Akichko.libMapView
         public void ShowAttribute()
         { }
 
-        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
-        {
-            throw new NotImplementedException();
-        }
+        //public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
     }
 
@@ -593,7 +596,7 @@ namespace Akichko.libMapView
 
         //開始・終了
         void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi);
-        void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg);
+        //void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg);
         void Shutdown();
 
         //ビュー設定

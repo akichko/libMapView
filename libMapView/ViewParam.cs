@@ -33,10 +33,9 @@ namespace Akichko.libMapView
 {
     public class ViewParam
     {
-
         public LatLon viewCenter;
 
-        double zoom; // dot/m
+        private double zoom; // dot/m
         public int zoomLevel;
 
         private int width;
@@ -149,28 +148,22 @@ namespace Akichko.libMapView
 
         public void SetViewCenter(LatLon latlon)
         {
-
             //緯度経度更新
             viewCenter.lon = latlon.lon;
             viewCenter.lat = latlon.lat;
 
             //その他パラメータ更新
-            //tileId = MapTool.CalcTileId(viewCenter);
             CalcMPerLatLon();
-
         }
 
         public void MoveViewCenter(LatLon relLatlon)
         {
-
             //緯度経度更新
             viewCenter.lon += relLatlon.lon;
             viewCenter.lat += relLatlon.lat;
 
             //その他パラメータ更新
-            //tileId = MapTool.CalcTileId(viewCenter);
             CalcMPerLatLon();
-
         }
 
         public void MoveViewCenter(int x, int y)
@@ -179,15 +172,12 @@ namespace Akichko.libMapView
             double relLon = - x / GetDotPerLon();
             double relLat = y / GetDotPerLat();
 
-
             //緯度経度更新
             viewCenter.lon += relLon;
             viewCenter.lat += relLat;
 
             //その他パラメータ更新
-            //tileId = MapTool.CalcTileId(viewCenter);
             CalcMPerLatLon();
-
         }
 
 
@@ -214,6 +204,23 @@ namespace Akichko.libMapView
         }
 
 
+        //座標変換
+        public PointF CalcPointInDrawArea(LatLon latlon)
+        {
+            //相対緯度経度算出
+            double relLat = latlon.lat - viewCenter.lat;
+            double relLon = latlon.lon - viewCenter.lon;
+
+            return new PointF(
+                (float)(Width_2 + relLon * GetDotPerLon()),
+                (float)(Height_2 - relLat * GetDotPerLat()));
+
+        }
+
+        public PointF[] CalcPolylineInDrawArea(LatLon[] geometry)
+        {
+            return geometry.Select(x => CalcPointInDrawArea(x)).ToArray();
+        }
     }
 
 

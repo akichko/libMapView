@@ -36,9 +36,8 @@ namespace Akichko.libMapView
     {
         protected IInputBoundary interactor;
         protected IInputBoundary interactorBg;
-        ViewParam viewParam;
-
         protected IInputBoundary interactorPtr;
+        ViewParam viewParam;
 
         /* 初期設定 **********************************************************/
 
@@ -73,7 +72,6 @@ namespace Akichko.libMapView
         public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
             interactorBg.OpenFile(fileName, mapMgr, drawApi);
-            interactorBg.RefreshDrawArea();
         }
 
         public void ChangeInteractor(bool front)
@@ -84,13 +82,11 @@ namespace Akichko.libMapView
                 interactorPtr = interactorBg;
         }
 
-
         public void Shutdown()
         {
             interactor.Shutdown();
             interactorBg?.Shutdown();
         }
-
 
         public void SetViewSettings(InteractorSettings settings)
         {
@@ -98,8 +94,8 @@ namespace Akichko.libMapView
             RefreshDrawArea();
         }
 
-        /* 描画パラメータ設定 **********************************************************/
 
+        /* 描画パラメータ設定 **********************************************************/
 
         public void SetDrawAreaSize(int width, int height)
         {
@@ -115,7 +111,6 @@ namespace Akichko.libMapView
             interactorBg?.SetViewCenter(latlon);
             RefreshDrawArea();
         }
-
 
         public void MoveViewCenter(int x, int y)
         {
@@ -136,27 +131,11 @@ namespace Akichko.libMapView
         public void ChangeZoom(int delta, int x, int y)
         {
             double zoom = delta > 0 ? 2 : 0.5;
-            ChangeZoom2(zoom, x, y);
-
-            //if (delta > 0)
-            //{
-            //    ChangeZoom2(2, x, y);
-            //}
-            //else if (delta < 0)
-            //{
-            //    ChangeZoom2(0.5, x, y);
-            //}
-            RefreshDrawArea();
-
-        }
-
-
-        private void ChangeZoom2(double delta, int x, int y)
-        {
+            //ChangeZoom2(zoom, x, y);
 
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
 
-            viewParam.Zoom *= delta;
+            viewParam.Zoom *= zoom;
 
             LatLon afterLatLon = viewParam.GetLatLon(x, y);
 
@@ -166,24 +145,46 @@ namespace Akichko.libMapView
             interactorPtr.SetViewParam(viewParam);
             MoveViewCenter(relLatLon);
 
-            //presenter.UpdateCenterLatLon(viewParam.viewCenter);
+
+            RefreshDrawArea();
 
         }
 
-        public void ChangeSetting(ControlMenu menu)
-        {
 
-        }
+        //private void ChangeZoom2(double zoom, int x, int y)
+        //{
 
-        public enum ControlMenu
-        {
-            DispOneWayON,
-            DispOneWayOFF,
-            DispTileBorderON,
-            DispTileBorderOFF,
-            BiggerDispArea,
-            SmallerDispArea
-        }
+        //    LatLon clickedLatLon = viewParam.GetLatLon(x, y);
+
+        //    viewParam.Zoom *= zoom;
+
+        //    LatLon afterLatLon = viewParam.GetLatLon(x, y);
+
+        //    //マウス位置保持のための移動
+        //    LatLon relLatLon = new LatLon(clickedLatLon.lat - afterLatLon.lat, clickedLatLon.lon - afterLatLon.lon);
+
+        //    interactorPtr.SetViewParam(viewParam);
+        //    MoveViewCenter(relLatLon);
+
+        //    //presenter.UpdateCenterLatLon(viewParam.viewCenter);
+
+        //}
+
+        //public void ChangeSetting(ControlMenu menu)
+        //{
+
+        //}
+
+        //public enum ControlMenu
+        //{
+        //    DispOneWayON,
+        //    DispOneWayOFF,
+        //    DispTileBorderON,
+        //    DispTileBorderOFF,
+        //    BiggerDispArea,
+        //    SmallerDispArea
+        //}
+
 
         /* 描画 **************************************************************/
 
@@ -245,15 +246,9 @@ namespace Akichko.libMapView
             interactorPtr.SetBoundaryGeometry(boundaryList);
         }
 
-        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
-        //{
-        //    interactor.SetRouteObjList(routeObjList);
-        //}
-
         public void ClearParam()
         {
-            interactor.ClearStatus();
-                
+            interactor.ClearStatus();                
         }
 
         //選択
@@ -270,12 +265,6 @@ namespace Akichko.libMapView
             RefreshDrawArea();
         }
 
-        public void AttrClick()
-        {
-
-        }
-
-
 
         //属性表示
 
@@ -283,7 +272,8 @@ namespace Akichko.libMapView
         { }
 
 
-        //検索
+        /* 検索 **************************************************************/
+
         public void SearchObject(uint tileId, uint objType, UInt64 objId, bool jump = true)
         {
             CmnObjHandle searchedObjHdl = interactorPtr.SearchObject(tileId, objType, objId);
@@ -323,8 +313,6 @@ namespace Akichko.libMapView
 
         }
 
-
-
         public void SearchRandomObject(uint objType)
         {
             CmnObjHandle obj = interactor.SearchRandomObject(objType);
@@ -346,6 +334,8 @@ namespace Akichko.libMapView
             interactorPtr.SetAttrSelectedObj(attrObjHdl);
         }
 
+
+        /* その他 **************************************************************/
 
         public RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
@@ -393,8 +383,8 @@ namespace Akichko.libMapView
     }
 
 
-    public class TypeListCtl
-    {
-        Dictionary<string, uint> objTypeDic;
-    }
+    //public class TypeListCtl
+    //{
+    //    Dictionary<string, uint> objTypeDic;
+    //}
 }
