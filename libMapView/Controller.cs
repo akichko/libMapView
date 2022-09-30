@@ -337,6 +337,11 @@ namespace Akichko.libMapView
 
         /* その他 **************************************************************/
 
+        public void SetRouteMgr(CmnRouteMgr routeMgr)
+        {
+            interactorPtr.SetRouteMgr(routeMgr);
+        }
+
         public RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
             return interactorPtr.CalcRoute(orgLatLon, dstLatLon);

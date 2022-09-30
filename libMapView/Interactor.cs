@@ -83,7 +83,7 @@ namespace Akichko.libMapView
         public void SetRouteMgr(CmnRouteMgr routeMgr)
         {
             this.routeMgr = routeMgr;
-            this.routeMgr.SetMapMgr(mapMgr);
+            //this.routeMgr.SetMapMgr(mapMgr);
         }
 
         public void Shutdown()
@@ -527,7 +527,7 @@ namespace Akichko.libMapView
 
         public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
         {
-            CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
+            //CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
 
             routeMgr.orgLatLon = orgLatLon;
             routeMgr.dstLatLon = dstLatLon;
@@ -583,6 +583,7 @@ namespace Akichko.libMapView
         public void ShowAttribute()
         { }
 
+
         //public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
         //{
         //    throw new NotImplementedException();
@@ -629,6 +630,7 @@ namespace Akichko.libMapView
         CmnObjHandle SearchRandomObject(uint objType);
 
         //ルート計算
+        void SetRouteMgr(CmnRouteMgr routeMgr);
         RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
 
     }
