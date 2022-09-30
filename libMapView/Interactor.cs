@@ -696,6 +696,9 @@ namespace Akichko.libMapView
         public CmnObjFilter drawMapObjFilter = null;
         public long timeStamp = -1;
 
+        //経路計算
+        //public DykstraSetting dykstraSetting = null;
+
         public InteractorSettings()
         {
             drawMapObjFilter = new CmnObjFilter();
