@@ -347,6 +347,11 @@ namespace Akichko.libMapView
             return interactorPtr.CalcRoute(orgLatLon, dstLatLon);
         }
 
+        public RouteResult CalcRoute(LatLon orgLatLon)
+        {
+            return interactorPtr.CalcRoute(orgLatLon);
+        }
+
         public void ReadBackground(StreamReader sr)
         {
 

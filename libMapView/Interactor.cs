@@ -524,19 +524,13 @@ namespace Akichko.libMapView
 
         /* その他 ***********************************************/
 
+        //public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon) =>
+        //    routeMgr.CalcRoute(orgLatLon, dstLatLon);
 
         public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
-        {
-            //CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
-
-            routeMgr.orgLatLon = orgLatLon;
-            routeMgr.dstLatLon = dstLatLon;
-
-            //Prepare
-            routeMgr.Prepare(false);
-
-            //計算
-            RouteResult routeCalcResult = routeMgr.CalcRoute();
+       {
+            ////計算
+            RouteResult routeCalcResult = routeMgr.CalcRoute(orgLatLon, dstLatLon);
 
             if (routeCalcResult.resultCode != ResultCode.Success)
             {
@@ -551,6 +545,27 @@ namespace Akichko.libMapView
 
             return routeCalcResult;
         }
+
+        //自律走行経路
+        public virtual RouteResult CalcRoute(LatLon orgLatLon)
+        {
+            //計算
+            RouteResult routeCalcResult = routeMgr.CalcAutoRoute(orgLatLon);
+
+            if (routeCalcResult.resultCode != ResultCode.Success)
+            {
+                SetRouteGeometry(null);
+                return routeCalcResult;
+            }
+
+            //status.route = routeCalcResult.links.Select(x => x.DLinkHdl);
+            presenter.OutputRoute(routeCalcResult.links);
+
+            SetRouteGeometry(routeMgr.GetRouteGeometry(routeCalcResult.links));
+
+            return routeCalcResult;
+        }
+
 
 
         //public virtual RouteResult CalcRoute(LatLon orgLatLon)
@@ -632,6 +647,7 @@ namespace Akichko.libMapView
         //ルート計算
         void SetRouteMgr(CmnRouteMgr routeMgr);
         RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
+        RouteResult CalcRoute(LatLon orgLatLon);
 
     }
 
