@@ -38,26 +38,8 @@ namespace Akichko.libMapView
         protected CmnDrawApi drawApi;
         // protected ViewParam viewParam;
 
-        //public InteractorSettings settings;
         public LatLon[] routeGeometry = null; //削除予定
         public List<LatLon[]> boundaryList = null; //削除予定
-
-        //Bitmap drawAreaBitmap;
-        //Graphics g;
-        //public InteractorSettings Settings
-        //{
-        //    get => settings;
-        //    set
-        //    {
-        //        settings = value;
-        //        drawApi.settings = value;
-        //    }
-        //}
-
-        //public LatLon selectedLatLon;
-        //パラメータ
-        //public bool isDrawTileBorder = true;
-        //public bool isDrawOneWay = true;
 
 
         public Presenter(IViewApi mainForm)
@@ -147,6 +129,18 @@ namespace Akichko.libMapView
                     drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Red, 4));
                     break;
 
+                case PointType.Location:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Red, 9, Color.Orange, 5));
+                    break;
+
+                case PointType.Origin:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Blue, 7, Color.LightBlue, 4));
+                    break;
+
+                case PointType.Destination:
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Orange, 7, Color.Yellow, 4));
+                    break;
+
                 case PointType.None:
                     drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3));
                     break;
@@ -196,7 +190,7 @@ namespace Akichko.libMapView
         //描画結果反映
         public void UpdateImage()
         {
-            viewAccess.UpdateImage(drawApi.GetDrawAreaBitMap());
+            viewAccess?.UpdateImage(drawApi.GetDrawAreaBitMap());
         }
 
 
@@ -210,7 +204,7 @@ namespace Akichko.libMapView
 
         public void RefreshDrawArea()
         {
-            viewAccess.RefreshDrawArea();
+            viewAccess?.RefreshDrawArea();
         }
 
 
@@ -218,12 +212,12 @@ namespace Akichko.libMapView
         {
             if (objHdl == null)
                 return;
-            viewAccess.DispListView(objHdl?.GetAttributeListItem());
+            viewAccess?.DispListView(objHdl?.GetAttributeListItem());
         }
 
         public void SetSelectedObjHdl(CmnObjHandle objHdl, PolyLinePos nearestPos = null)
         {
-            viewAccess.DispSelectedObjHdl(objHdl, nearestPos);
+            viewAccess?.DispSelectedObjHdl(objHdl, nearestPos);
             drawApi.selectObjHdl = objHdl;
         }
 
@@ -257,23 +251,20 @@ namespace Akichko.libMapView
 
         public void UpdateCenterLatLon(LatLon latlon)
         {
-            viewAccess.DispCenterLatLon(latlon);
+            viewAccess?.DispCenterLatLon(latlon);
         }
 
         public void UpdateCenterTileId(uint tileId)
         {
-            viewAccess.DispCurrentTileId(tileId);
+            viewAccess?.DispCurrentTileId(tileId);
         }
 
         public void UpdateClickedLatLon(LatLon latlon)
         {
-            viewAccess.DispClickedLatLon(latlon);
+            //viewAccess?.DispClickedLatLon(latlon);
+            viewAccess?.DispLatLon(PointType.Clicked, latlon);
         }
 
-        public void SetNearestLatLon(LatLon latlon)
-        {
-            //viewAccess.DispClickedLatLon(latlon);
-        }
 
         public void SetBoundaryList(List<LatLon[]> boundaryList)
         {
@@ -285,31 +276,27 @@ namespace Akichko.libMapView
         //    this.routeGeometry = routeGeometry;
         //}
 
-        //public void SetSelectedLatLon(LatLon latlon)
-        //{
-        //    this.selectedLatLon = latlon;
-        //}
 
         public void PrintLog(int logType, string logStr)
         {
-            viewAccess.PrintLog(logType, logStr);
+            viewAccess?.PrintLog(logType, logStr);
         }
 
         public void OutputRoute(IEnumerable<CmnObjHandle> route)
         {
-            viewAccess.DispRoute(route.ToList());
+            viewAccess?.DispRoute(route.ToList());
         }
 
         public void SetTimeStampRange(TimeStampRange timeStampRange)
         {
-            viewAccess.SetTimeStampRange(timeStampRange);
+            viewAccess?.SetTimeStampRange(timeStampRange);
         }
 
 
 
         //public void DispDest(CmnObjHandle linkHdl)
         //{
-        //    viewAccess.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
+        //    viewAccess?.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
         //}
     }
 
@@ -327,7 +314,9 @@ namespace Akichko.libMapView
         //パラメータ表示
         void DispCurrentTileId(uint tileId);
         void DispCenterLatLon(LatLon latlon);
-        void DispClickedLatLon(LatLon latlon);
+        //void DispClickedLatLon(LatLon latlon);
+        
+        void DispLatLon(PointType pointType, LatLon latlon);
 
         void DispRoute(List<CmnObjHandle> route);
 

@@ -151,6 +151,11 @@ namespace Akichko.libMapView
         }
 
 
+        public void SetDrawPoint(PointType pointType, LatLon latlon)
+        {
+            interactorPtr.SetDrawPoint(pointType, latlon);
+        }
+
         //private void ChangeZoom2(double zoom, int x, int y)
         //{
 

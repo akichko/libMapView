@@ -44,6 +44,8 @@ namespace Akichko.libMapView
 
         protected CmnRouteMgr routeMgr;
 
+        protected Dictionary<PointType, LatLon> drawPointDic;
+
         SemaphoreSlim semaphoReloading = new SemaphoreSlim(1, 1);
 
         //制御用
@@ -62,6 +64,8 @@ namespace Akichko.libMapView
             this.presenter = presenter;
             this.settings = settings;
             this.status = new InteractorStatus();
+
+            drawPointDic = new Dictionary<PointType, LatLon>();
         }
 
 
@@ -189,10 +193,8 @@ namespace Akichko.libMapView
             if (settings.isTileBorderDisp)
                 presenter.DrawTileBorder(tileList, viewParam);
 
-            //選択座標点追加描画
-            presenter.DrawPoint(status.clickedLatLon, viewParam, PointType.Clicked);
-            presenter.DrawPoint(status.nearestLatLon, viewParam, PointType.Nearest);
-            presenter.DrawPoint(status.selectedLatLon, viewParam, PointType.Selected);
+            //座標点追加描画
+            DrawPoints(viewParam);
 
             //ルート形状描画
             presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
@@ -201,6 +203,16 @@ namespace Akichko.libMapView
             if (settings.isCenterMarkDisp)
                 presenter.DrawCenterMark(viewParam);
         }
+
+
+        public void DrawPoints(ViewParam viewParam)
+        {
+            foreach (var drawPoint in drawPointDic)
+            {
+                presenter.DrawPoint(drawPoint.Value, viewParam, drawPoint.Key);
+            }
+        }
+
 
         public void RefreshDrawArea()
         {
@@ -333,7 +345,8 @@ namespace Akichko.libMapView
 
             presenter.SetSelectedObjHdl(status.selectedHdl, nearestPos);
             presenter.ShowAttribute(status.selectedHdl);
-            this.status.nearestLatLon = nearestPos.latLon;
+
+            SetDrawPoint(PointType.Nearest, nearestPos.latLon);
 
             SearchRelatedObject(status.selectedHdl);
 
@@ -414,14 +427,13 @@ namespace Akichko.libMapView
 
         public void SetAttrSelectedLatLon(LatLon latlon)
         {
-            this.status.selectedLatLon = latlon;
-            //presenter.SetSelectedLatLon(latlon);
+            SetDrawPoint(PointType.Selected, latlon);
             status.isPaintNeeded = true;
         }
 
         public void SetNearestObj(PolyLinePos nearestPos)
         {
-            this.status.nearestLatLon = nearestPos.latLon;
+            SetDrawPoint(PointType.Nearest, nearestPos.latLon);
             status.isPaintNeeded = true;
         }
 
@@ -438,7 +450,8 @@ namespace Akichko.libMapView
 
         public void SetClickedLatLon(LatLon clickedLatLon)
         {
-            this.status.clickedLatLon = clickedLatLon;
+
+            SetDrawPoint(PointType.Clicked, clickedLatLon);
             presenter.UpdateClickedLatLon(clickedLatLon);
         }
 
@@ -451,9 +464,23 @@ namespace Akichko.libMapView
         public void ClearStatus()
         {
             status.Clear();
+            drawPointDic.Clear();
             presenter.SetSelectedObjHdl(null);
             presenter.SetRelatedObj(null);
             RefreshDrawArea();
+        }
+
+        public void SetDrawPoint(PointType pointType, LatLon latlon)
+        {
+            if (latlon != null)
+            {
+                drawPointDic[pointType] = latlon;
+            }
+            else
+            {
+                if (drawPointDic.ContainsKey(pointType))
+                    drawPointDic.Remove(pointType);
+            }
         }
 
         //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
@@ -629,6 +656,8 @@ namespace Akichko.libMapView
         void SetAttrSelectedObj(CmnObjHandle attrObjHdl);
         void SetAttrSelectedLatLon(LatLon latlon);
 
+        void SetDrawPoint(PointType pointType, LatLon latlon);
+
         //描画
         Task<int> RefreshMapCacheAsync();
         void Paint(IInputBoundary preInteractor = null);
@@ -747,18 +776,26 @@ namespace Akichko.libMapView
 
         //保存パラメータ
         public CmnObjHandle selectedHdl = null;
-        public LatLon selectedLatLon = null;
-        public LatLon clickedLatLon = null;
-        public LatLon nearestLatLon = null;
+        //public LatLon selectedLatLon = null;
+        //public LatLon clickedLatLon = null;
+        //public LatLon nearestLatLon = null;
+
+        //public LatLon originLatLon = null;
+        //public LatLon destinationLatLon = null;
+        //public LatLon locatorLatLon = null;
+
         public IEnumerable<CmnObjHandle> route = null;
         public LatLon[] routeGeometry = null;
 
         public void Clear()
         {
             selectedHdl = null;
-            selectedLatLon = null;
-            clickedLatLon = null;
-            nearestLatLon = null;
+            //selectedLatLon = null;
+            //clickedLatLon = null;
+            //nearestLatLon = null;
+            //originLatLon = null;
+            //destinationLatLon = null;
+            //locatorLatLon = null;
             route = null;
             routeGeometry = null;
         }
@@ -769,7 +806,11 @@ namespace Akichko.libMapView
         None,
         Clicked,
         Nearest,
-        Selected
+        Selected,
+        Origin,
+        Destination,
+        Location,
+        Other
     }
 
 }
