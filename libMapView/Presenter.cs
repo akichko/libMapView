@@ -36,7 +36,6 @@ namespace Akichko.libMapView
     {
         protected IViewApi viewAccess;
         protected CmnDrawApi drawApi;
-        // protected ViewParam viewParam;
 
         public LatLon[] routeGeometry = null; //削除予定
         public List<LatLon[]> boundaryList = null; //削除予定
@@ -130,7 +129,7 @@ namespace Akichko.libMapView
                     break;
 
                 case PointType.Location:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.Red, 9, Color.Orange, 5));
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.DarkGreen, 9, Color.LightGreen, 5));
                     break;
 
                 case PointType.Origin:
@@ -138,7 +137,7 @@ namespace Akichko.libMapView
                     break;
 
                 case PointType.Destination:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.Orange, 7, Color.Yellow, 4));
+                    drawApi.DrawPoint(latlon, new PointStyle(Color.Red, 7, Color.Yellow, 4));
                     break;
 
                 case PointType.None:
@@ -151,14 +150,6 @@ namespace Akichko.libMapView
             };
         }
 
-        //経路計算結果描画
-        //public void DrawRouteGeometry(ViewParam viewParam)
-        //{
-        //    //ルート形状描画
-        //    Pen pen = new Pen(Color.FromArgb(96, 255, 0, 0), 20);
-        //    pen.CustomEndCap = new System.Drawing.Drawing2D.AdjustableArrowCap(2, 2);
-        //    drawApi.DrawPolyline(g, routeGeometry, pen, viewParam);
-        //}
 
         //ルート形状描画
         public void DrawRouteGeometry(LatLon[] polyline, ViewParam viewParam)
@@ -226,26 +217,10 @@ namespace Akichko.libMapView
             drawApi.selectAttr = selectAttr;
         }
 
-        //public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
-        //{
-        //    drawApi.boundaryList = boundaryList;
-        //            }
-
         public void SetRelatedObj(List<CmnObjHdlRef> refObjList)
         {
             drawApi.refObjList = refObjList;
         }
-
-        //public void SetRouteGeometry(LatLon[] routeGeometry)
-        //{
-        //    drawApi.routeGeometry = routeGeometry;
-        //}
-
-
-        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
-        //{
-        //    drawApi.routeObjList = routeObjList;
-        //}
 
         /* ステータスバー用 ***************************************************************/
 
@@ -261,28 +236,20 @@ namespace Akichko.libMapView
 
         public void UpdateClickedLatLon(LatLon latlon)
         {
-            //viewAccess?.DispClickedLatLon(latlon);
             viewAccess?.DispLatLon(PointType.Clicked, latlon);
         }
-
 
         public void SetBoundaryList(List<LatLon[]> boundaryList)
         {
             this.boundaryList = boundaryList;
         }
 
-        //public void SetRouteGeometry(LatLon[] routeGeometry)
-        //{
-        //    this.routeGeometry = routeGeometry;
-        //}
-
-
         public void PrintLog(int logType, string logStr)
         {
             viewAccess?.PrintLog(logType, logStr);
         }
 
-        public void OutputRoute(IEnumerable<CmnObjHandle> route)
+        public void OutputRoute(List<CmnObjHandle> route)
         {
             viewAccess?.DispRoute(route.ToList());
         }
@@ -292,12 +259,6 @@ namespace Akichko.libMapView
             viewAccess?.SetTimeStampRange(timeStampRange);
         }
 
-
-
-        //public void DispDest(CmnObjHandle linkHdl)
-        //{
-        //    viewAccess?.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
-        //}
     }
 
 
@@ -568,24 +529,6 @@ namespace Akichko.libMapView
             g.DrawEllipse(new Pen(style.color, style.width), pointNW.X, pointNW.Y, radiusX * 2, radiusY * 2);
 
         }
-
-        //座標変換
-        //protected PointF CalcPointInDrawArea(LatLon latlon, ViewParam viewParam)
-        //{
-        //    //相対緯度経度算出
-        //    double relLat = latlon.lat - viewParam.viewCenter.lat;
-        //    double relLon = latlon.lon - viewParam.viewCenter.lon;
-
-        //    return new PointF(
-        //        (float)(viewParam.Width_2 + relLon * viewParam.GetDotPerLon()),
-        //        (float)(viewParam.Height_2 - relLat * viewParam.GetDotPerLat()));
-
-        //}
-
-        //protected PointF[] CalcPolylineInDrawArea(LatLon[] geometry, ViewParam viewParam)
-        //{
-        //    return geometry.Select(x => CalcPointInDrawArea(x, viewParam)).ToArray();
-        //}
 
     }
 

@@ -34,7 +34,7 @@ namespace Akichko.libMapView
 {
     public class Controller
     {
-        protected IInputBoundary interactor;
+        protected IInputBoundary interactorFg;
         protected IInputBoundary interactorBg;
         protected IInputBoundary interactorPtr;
         ViewParam viewParam;
@@ -43,24 +43,19 @@ namespace Akichko.libMapView
 
         public Controller(IInputBoundary interactor)
         {
-            this.interactor = interactor;
+            this.interactorFg = interactor;
             interactorPtr = interactor;
             //this.interactor = new Interactor(new Presenter(outputClass));
             viewParam = new ViewParam(35.4629, 139.62657, 1.0);
-            interactor.SetViewParam(viewParam);
+            interactorFg.SetViewParam(viewParam);
             //this.interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
             //this.interactor.SetViewSettings(settings);
 
         }
 
-        //public void SetDrawInterface(CmnDrawApi drawApi)
-        //{
-        //    interactor.SetDrawInterface(drawApi);
-        //}
-
         public void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactor.OpenFile(fileName, mapMgr, drawApi);
+            interactorFg.OpenFile(fileName, mapMgr, drawApi);
         }
 
         public void SetInteractorBg(IInputBoundary interactorBg)
@@ -77,14 +72,14 @@ namespace Akichko.libMapView
         public void ChangeInteractor(bool front)
         {
             if (front)
-                interactorPtr = interactor;
+                interactorPtr = interactorFg;
             else //bg
                 interactorPtr = interactorBg;
         }
 
         public void Shutdown()
         {
-            interactor.Shutdown();
+            interactorFg.Shutdown();
             interactorBg?.Shutdown();
         }
 
@@ -107,7 +102,7 @@ namespace Akichko.libMapView
 
         public void SetViewCenter(LatLon latlon)
         {
-            interactor.SetViewCenter(latlon);
+            interactorFg.SetViewCenter(latlon);
             interactorBg?.SetViewCenter(latlon);
             RefreshDrawArea();
         }
@@ -115,7 +110,7 @@ namespace Akichko.libMapView
         public void MoveViewCenter(int x, int y)
         {
             viewParam.MoveViewCenter(x, y);
-            interactor.SetViewParam(viewParam);
+            interactorFg.SetViewParam(viewParam);
             interactorBg?.SetViewParam(viewParam);
             RefreshDrawArea();
         }
@@ -123,7 +118,7 @@ namespace Akichko.libMapView
         public void MoveViewCenter(LatLon relLatLon)
         {
             viewParam.MoveViewCenter(relLatLon);
-            interactor.SetViewParam(viewParam);
+            interactorFg.SetViewParam(viewParam);
             interactorBg?.SetViewParam(viewParam);
             RefreshDrawArea();
         }
@@ -131,7 +126,6 @@ namespace Akichko.libMapView
         public void ChangeZoom(int delta, int x, int y)
         {
             double zoom = delta > 0 ? 2 : 0.5;
-            //ChangeZoom2(zoom, x, y);
 
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
 
@@ -145,7 +139,6 @@ namespace Akichko.libMapView
             interactorPtr.SetViewParam(viewParam);
             MoveViewCenter(relLatLon);
 
-
             RefreshDrawArea();
 
         }
@@ -156,29 +149,6 @@ namespace Akichko.libMapView
             interactorPtr.SetDrawPoint(pointType, latlon);
         }
 
-        //private void ChangeZoom2(double zoom, int x, int y)
-        //{
-
-        //    LatLon clickedLatLon = viewParam.GetLatLon(x, y);
-
-        //    viewParam.Zoom *= zoom;
-
-        //    LatLon afterLatLon = viewParam.GetLatLon(x, y);
-
-        //    //マウス位置保持のための移動
-        //    LatLon relLatLon = new LatLon(clickedLatLon.lat - afterLatLon.lat, clickedLatLon.lon - afterLatLon.lon);
-
-        //    interactorPtr.SetViewParam(viewParam);
-        //    MoveViewCenter(relLatLon);
-
-        //    //presenter.UpdateCenterLatLon(viewParam.viewCenter);
-
-        //}
-
-        //public void ChangeSetting(ControlMenu menu)
-        //{
-
-        //}
 
         //public enum ControlMenu
         //{
@@ -195,7 +165,7 @@ namespace Akichko.libMapView
 
         public async void Paint()
         {
-            var task = interactor.RefreshMapCacheAsync();
+            var task = interactorFg.RefreshMapCacheAsync();
             var taskBg = interactorBg?.RefreshMapCacheAsync() ?? Task.FromResult(0);
 
             //同期　⇒しないとスレッドセーフ懸念
@@ -203,20 +173,20 @@ namespace Akichko.libMapView
 
             if (interactorBg == null)
             {
-                interactor.Paint();
+                interactorFg.Paint();
             }
             else
             {
-                if (!interactor.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
+                if (!interactorFg.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
                     return;
 
-                interactor.Status.isPaintNeeded = true;
+                interactorFg.Status.isPaintNeeded = true;
                 interactorBg.Status.isPaintNeeded = true;
 
                 interactorBg.MakeImage();
-                interactor.MakeImage(interactorBg);
+                interactorFg.MakeImage(interactorBg);
 
-                interactor.UpdateImage();
+                interactorFg.UpdateImage();
             }
 
             try
@@ -232,7 +202,7 @@ namespace Akichko.libMapView
 
         public void RefreshDrawArea()
         {
-            interactor.RefreshDrawArea();
+            interactorFg.RefreshDrawArea();
             interactorBg?.RefreshDrawArea();
         }
 
@@ -253,7 +223,7 @@ namespace Akichko.libMapView
 
         public void ClearParam()
         {
-            interactor.ClearStatus();                
+            interactorFg.ClearStatus();                
         }
 
         //選択
@@ -294,7 +264,7 @@ namespace Akichko.libMapView
 
         public void SearchObject(uint tileId, uint objType, UInt16 objIndex, bool jump = true)
         {
-            CmnObjHandle searchedObjHdl = interactor.SearchObject(tileId, objType, objIndex);
+            CmnObjHandle searchedObjHdl = interactorFg.SearchObject(tileId, objType, objIndex);
             if (searchedObjHdl != null && jump)
             {
                 LatLon latlon = searchedObjHdl.GetCenterLatLon();
@@ -307,7 +277,7 @@ namespace Akichko.libMapView
 
         public void SearchObject(CmnSearchKey key)
         {
-            CmnObjHandle searchedObjHdl = interactor.SearchObject(key);
+            CmnObjHandle searchedObjHdl = interactorFg.SearchObject(key);
             if (searchedObjHdl != null)
             {
                 LatLon latlon = searchedObjHdl.GetCenterLatLon();
@@ -320,22 +290,22 @@ namespace Akichko.libMapView
 
         public void SearchRandomObject(uint objType)
         {
-            CmnObjHandle obj = interactor.SearchRandomObject(objType);
+            CmnObjHandle obj = interactorFg.SearchRandomObject(objType);
 
             LatLon latlon = obj?.GetCenterLatLon();
 
             if(latlon != null)
-                interactor.SetViewCenter(latlon);
+                interactorFg.SetViewCenter(latlon);
         }
 
         public void SearchTile(uint tileId)
         {
-            interactor.SetViewCenter(tileId);
+            interactorFg.SetViewCenter(tileId);
         }
 
         public void SelectAttribute(CmnSearchKey key)
         {
-            CmnObjHandle attrObjHdl = interactor.SearchAttrObject(key);
+            CmnObjHandle attrObjHdl = interactorFg.SearchAttrObject(key);
             interactorPtr.SetAttrSelectedObj(attrObjHdl);
         }
 
@@ -397,9 +367,4 @@ namespace Akichko.libMapView
         }
     }
 
-
-    //public class TypeListCtl
-    //{
-    //    Dictionary<string, uint> objTypeDic;
-    //}
 }
