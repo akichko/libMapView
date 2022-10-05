@@ -51,11 +51,6 @@ namespace Akichko.libMapView
             this.drawApi = drawApi;
         }
 
-        //public void SetDrawBgInterface(CmnDrawApi drawBgApi)
-        //{
-        //    this.drawBgApi = drawBgApi;
-        //}
-
         public void SetViewSettings(InteractorSettings settings)
         {
             //this.settings = settings;

@@ -180,8 +180,8 @@ namespace Akichko.libMapView
                 if (!interactorFg.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
                     return;
 
-                interactorFg.Status.isPaintNeeded = true;
-                interactorBg.Status.isPaintNeeded = true;
+                interactorFg.Status.isPaintNeeded = false;
+                interactorBg.Status.isPaintNeeded = false;
 
                 interactorBg.MakeImage();
                 interactorFg.MakeImage(interactorBg);

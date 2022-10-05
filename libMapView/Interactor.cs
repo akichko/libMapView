@@ -361,6 +361,24 @@ namespace Akichko.libMapView
             return status.selectedHdl;
         }
 
+        //読み込み済みタイルから検索
+        public CmnObjHandle SearchObject(uint objType, UInt64 objId)
+        {
+            if (!status.drawEnable)
+                return null;
+
+            status.selectedHdl = mapMgr.GetLoadedTileList()
+                .Select(tile => mapMgr.SearchObj(tile.TileId, objType, objId, settings.timeStamp))
+                .FirstOrDefault();
+
+            presenter.SetSelectedObjHdl(status.selectedHdl);
+            presenter.ShowAttribute(status.selectedHdl);
+
+            SearchRelatedObject(status.selectedHdl);
+
+            return status.selectedHdl;
+        }
+
         public CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
         {
             if (!status.drawEnable)
@@ -589,6 +607,7 @@ namespace Akichko.libMapView
         //検索
         CmnObjHandle SearchObject(LatLon baseLatLon);
         CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
+        CmnObjHandle SearchObject(uint objType, ulong objId);
         CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex);
         CmnObjHandle SearchObject(CmnSearchKey key);
         CmnObjHandle SearchAttrObject(CmnSearchKey key);
