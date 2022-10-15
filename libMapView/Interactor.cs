@@ -36,8 +36,7 @@ namespace Akichko.libMapView
     {
         protected CmnMapMgr mapMgr;
         protected ViewParam viewParam;
-        public IOutputBoundary presenter;
-        //Presenter presenter;
+        protected Presenter presenter;
 
         //動作設定
         protected InteractorSettings settings;
@@ -59,7 +58,7 @@ namespace Akichko.libMapView
 
         /* 起動・設定・終了 ***********************************************/
 
-        public Interactor(IOutputBoundary presenter, InteractorSettings settings)
+        public Interactor(Presenter presenter, InteractorSettings settings)
         {
             this.presenter = presenter;
             this.settings = settings;
@@ -69,13 +68,10 @@ namespace Akichko.libMapView
         }
 
 
-        public void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
+        public void SetMapMgr(CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
             this.mapMgr = mapMgr;
-            mapMgr.Connect(fileName);
             presenter.SetDrawInterface(drawApi);
-
-            //routeMgr = new RouteMgr(MapDataType.MapManager);
 
             //RefreshMapCache();
             status.drawEnable = true;
@@ -104,28 +100,6 @@ namespace Akichko.libMapView
 
         /* 描画 ***********************************************/
 
-        //public int PaintAppend(IOutputBoundary prePresenter = null)
-        //{
-        //    if (!status.drawEnable || !status.isPaintNeeded)
-        //        return -1;
-        //    status.isPaintNeeded = false;
-
-        //    int timeS = Environment.TickCount;
-
-        //    //描画対象タイルを特定
-        //    List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
-
-        //    //描画
-        //    presenter.InitializeGraphics(settings, viewParam, prePresenter);
-        //    DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
-
-        //    UpdateImage();
-
-        //    int exeTime = Environment.TickCount - timeS;
-        //    presenter.PrintLog(1, $"Paint:{exeTime}");
-
-        //    return 0;
-        //}
 
         public int MakeImage(IInputBoundary preInteractor = null)
         {
@@ -194,7 +168,7 @@ namespace Akichko.libMapView
                 presenter.DrawTileBorder(tileList, viewParam);
 
             //座標点追加描画
-            DrawPoints(viewParam);
+            drawPointDic.ForEach(x => presenter.DrawPoint(x.Value, viewParam, x.Key));
 
             //ルート形状描画
             presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
@@ -203,16 +177,6 @@ namespace Akichko.libMapView
             if (settings.isCenterMarkDisp)
                 presenter.DrawCenterMark(viewParam);
         }
-
-
-        public void DrawPoints(ViewParam viewParam)
-        {
-            foreach (var drawPoint in drawPointDic)
-            {
-                presenter.DrawPoint(drawPoint.Value, viewParam, drawPoint.Key);
-            }
-        }
-
 
         public void RefreshDrawArea()
         {
@@ -337,17 +301,23 @@ namespace Akichko.libMapView
             if (!status.drawEnable)
                 return null;
 
+            //最近傍オブジェクト取得
             status.selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange, settings.timeStamp);
             if (status.selectedHdl == null)
                 return null;
 
+            //最近傍座標計算
             PolyLinePos nearestPos = LatLon.CalcNearestPoint(baseLatLon, status.selectedHdl?.Geometry);
 
             presenter.SetSelectedObjHdl(status.selectedHdl, nearestPos);
+
+            //選択オブジェクト属性表示
             presenter.ShowAttribute(status.selectedHdl);
 
+            //最近傍座標点描画
             SetDrawPoint(PointType.Nearest, nearestPos.latLon);
 
+            //関連オブジェクト取得
             SearchRelatedObject(status.selectedHdl);
 
             return status.selectedHdl;
@@ -427,7 +397,7 @@ namespace Akichko.libMapView
 
         public void SetAttrSelectedLatLon(LatLon latlon)
         {
-            SetDrawPoint(PointType.Selected, latlon);
+            SetDrawPoint(PointType.AttrSelected, latlon);
             status.isPaintNeeded = true;
         }
 
@@ -448,12 +418,6 @@ namespace Akichko.libMapView
             presenter.SetBoundaryList(boundaryList);
         }
 
-        public void SetClickedLatLon(LatLon clickedLatLon)
-        {
-
-            SetDrawPoint(PointType.Clicked, clickedLatLon);
-            presenter.UpdateClickedLatLon(clickedLatLon);
-        }
 
         public void SetAttrSelectedObj(CmnObjHandle selectedAttr)
         {
@@ -476,11 +440,18 @@ namespace Akichko.libMapView
             {
                 drawPointDic[pointType] = latlon;
             }
-            else
+            else //null -> clear
             {
                 if (drawPointDic.ContainsKey(pointType))
                     drawPointDic.Remove(pointType);
             }
+
+            if(pointType == PointType.Clicked)
+            {
+                presenter.UpdateClickedLatLon(latlon);
+            }
+
+            status.isPaintNeeded = true;
         }
 
         //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
@@ -513,40 +484,6 @@ namespace Akichko.libMapView
             viewParam.SetViewCenter(tileCenter);
             UpdateCurrentTileId();
         }
-
-        //public void MoveViewCenter(LatLon relLatLon)
-        //{
-        //    viewParam.MoveViewCenter(relLatLon);
-        //    presenter.UpdateCenterLatLon(viewParam.viewCenter);
-        //    UpdateCurrentTileId();
-        //}
-
-        //public void MoveViewCenter(int x, int y)
-        //{
-        //    viewParam.MoveViewCenter(x, y);
-        //    //presenter.UpdateCenterTileId(mapMgr.tileApi.CalcTileId(viewParam.viewCenter));
-        //    presenter.UpdateCenterLatLon(viewParam.viewCenter);
-        //    UpdateCurrentTileId();
-        //}
-
-        //public void ChangeZoom(double delta, int x, int y)
-        //{
-
-        //    LatLon clickedLatLon = GetLatLon(x, y);
-
-        //    viewParam.Zoom *= delta;
-
-        //    LatLon afterLatLon = GetLatLon(x, y);
-
-        //    //マウス位置保持のための移動
-        //    LatLon relLatLon = new LatLon(clickedLatLon.lat - afterLatLon.lat, clickedLatLon.lon - afterLatLon.lon);
-        //    MoveViewCenter(relLatLon);
-
-        //    presenter.UpdateCenterLatLon(viewParam.viewCenter);
-
-        //}
-
-
 
 
         /* その他 ***********************************************/
@@ -594,42 +531,9 @@ namespace Akichko.libMapView
         }
 
 
-
-        //public virtual RouteResult CalcRoute(LatLon orgLatLon)
-        //{
-        //    CmnRouteMgr routeMgr = mapMgr.CreateRouteMgr();
-
-        //    routeMgr.orgLatLon = orgLatLon;
-
-        //    //Prepare
-        //    routeMgr.Prepare2(false);
-
-        //    //計算
-        //    RouteResult routeCalcResult = routeMgr.CalcRoute2();
-
-        //    if (routeCalcResult.resultCode != ResultCode.Success)
-        //    {
-        //        SetRouteGeometry(null);
-        //        return routeCalcResult;
-        //    }
-
-        //    status.route = routeCalcResult.route.Select(x => x.DLinkHdl);
-        //    presenter.OutputRoute(status.route);
-
-        //    SetRouteGeometry(routeMgr.GetResult());
-
-        //    return routeCalcResult;
-        //}
-
-
         public void ShowAttribute()
         { }
 
-
-        //public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg)
-        //{
-        //    throw new NotImplementedException();
-        //}
 
     }
 
@@ -638,8 +542,7 @@ namespace Akichko.libMapView
         InteractorStatus Status { get; set; }
 
         //開始・終了
-        void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi);
-        //void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, IOutputBoundary presenter, InteractorSettings settingsBg);
+        void SetMapMgr(CmnMapMgr mapMgr, CmnDrawApi drawApi);
         void Shutdown();
 
         //ビュー設定
@@ -651,10 +554,9 @@ namespace Akichko.libMapView
         //描画設定
         void ClearStatus();
         void SetBoundaryGeometry(List<LatLon[]> boundaryList);
-        void SetClickedLatLon(LatLon clickedLatLon);
         void SetRouteGeometry(LatLon[] routeGeometry);
         void SetAttrSelectedObj(CmnObjHandle attrObjHdl);
-        void SetAttrSelectedLatLon(LatLon latlon);
+        //void SetAttrSelectedLatLon(LatLon latlon);
 
         void SetDrawPoint(PointType pointType, LatLon latlon);
 
@@ -692,7 +594,7 @@ namespace Akichko.libMapView
         void DrawBackGround(ViewParam viewParam);
         void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp = -1);
         void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam);
-        void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None);
+        void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.Other);
         void DrawRouteGeometry(LatLon[] routeGeometry, ViewParam viewParam);
         void DrawCenterMark(ViewParam viewParam);
         void UpdateImage();
@@ -776,26 +678,12 @@ namespace Akichko.libMapView
 
         //保存パラメータ
         public CmnObjHandle selectedHdl = null;
-        //public LatLon selectedLatLon = null;
-        //public LatLon clickedLatLon = null;
-        //public LatLon nearestLatLon = null;
-
-        //public LatLon originLatLon = null;
-        //public LatLon destinationLatLon = null;
-        //public LatLon locatorLatLon = null;
-
         public IEnumerable<CmnObjHandle> route = null;
         public LatLon[] routeGeometry = null;
 
         public void Clear()
         {
             selectedHdl = null;
-            //selectedLatLon = null;
-            //clickedLatLon = null;
-            //nearestLatLon = null;
-            //originLatLon = null;
-            //destinationLatLon = null;
-            //locatorLatLon = null;
             route = null;
             routeGeometry = null;
         }
@@ -803,10 +691,9 @@ namespace Akichko.libMapView
 
     public enum PointType
     {
-        None,
         Clicked,
         Nearest,
-        Selected,
+        AttrSelected,
         Origin,
         Destination,
         Location,

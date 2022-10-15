@@ -113,7 +113,7 @@ namespace Akichko.libMapView
         }
 
         //座標点追加描画
-        public void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.None)
+        public void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.Other)
         {
             switch (type)
             {
@@ -121,7 +121,7 @@ namespace Akichko.libMapView
                     drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.Yellow, 3));
                     break;
 
-                case PointType.Selected:
+                case PointType.AttrSelected:
                     drawApi.DrawPoint(latlon, new PointStyle(Color.Black, 6, Color.Green, 4));
                     break;
 
@@ -141,11 +141,7 @@ namespace Akichko.libMapView
                     drawApi.DrawPoint(latlon, new PointStyle(Color.Orange, 7, Color.Yellow, 4));
                     break;
 
-                case PointType.None:
-                    drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3));
-                    break;
-
-                default:
+                default: //Other
                     drawApi.DrawPoint(latlon, new PointStyle(Color.DodgerBlue, 6, Color.White, 3));
                     break;
             };
@@ -292,12 +288,6 @@ namespace Akichko.libMapView
             viewAccess?.SetTimeStampRange(timeStampRange);
         }
 
-
-
-        //public void DispDest(CmnObjHandle linkHdl)
-        //{
-        //    viewAccess?.DispDest($"{linkHdl.tile.tileId}-{linkHdl.linkIndex}");
-        //}
     }
 
 

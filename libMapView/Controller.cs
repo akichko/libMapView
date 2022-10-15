@@ -34,14 +34,14 @@ namespace Akichko.libMapView
 {
     public class Controller
     {
-        protected IInputBoundary interactor;
-        protected IInputBoundary interactorBg;
-        protected IInputBoundary interactorPtr;
+        protected Interactor interactor;
+        protected Interactor interactorBg;
+        protected Interactor interactorPtr;
         ViewParam viewParam;
 
         /* 初期設定 **********************************************************/
 
-        public Controller(IInputBoundary interactor)
+        public Controller(Interactor interactor)
         {
             this.interactor = interactor;
             interactorPtr = interactor;
@@ -60,10 +60,11 @@ namespace Akichko.libMapView
 
         public void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactor.OpenFile(fileName, mapMgr, drawApi);
+            mapMgr.Connect(fileName);
+            interactor.SetMapMgr(mapMgr, drawApi);
         }
 
-        public void SetInteractorBg(IInputBoundary interactorBg)
+        public void SetInteractorBg(Interactor interactorBg)
         {
             this.interactorBg = interactorBg;
             interactorBg.SetViewParam(viewParam);
@@ -71,7 +72,8 @@ namespace Akichko.libMapView
 
         public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactorBg.OpenFile(fileName, mapMgr, drawApi);
+            mapMgr.Connect(fileName);
+            interactorBg.SetMapMgr(mapMgr, drawApi);
         }
 
         public void ChangeInteractor(bool front)
@@ -236,10 +238,11 @@ namespace Akichko.libMapView
             interactorBg?.RefreshDrawArea();
         }
 
-        public void SetSelectedLatLon(LatLon latlon)
-        {
-            interactorPtr.SetAttrSelectedLatLon(latlon);
-        }
+        //public void SetSelectedLatLon(LatLon latlon)
+        //{
+        //    //interactorPtr.SetAttrSelectedLatLon(latlon);
+        //    interactorPtr.SetDrawPoint(PointType.Selected, latlon);
+        //}
 
         public void SetRouteGeometry(LatLon[] routeGeometry)
         {
@@ -265,8 +268,8 @@ namespace Akichko.libMapView
 
             //PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj?.Geometry);
 
-            interactorPtr.SetClickedLatLon(clickedLatLon);
-            //interactor.SetNearestObj(nearestPos);
+            interactorPtr.SetDrawPoint(PointType.Clicked, clickedLatLon);
+            interactorPtr.SetDrawPoint(PointType.AttrSelected, null);
             RefreshDrawArea();
         }
 
