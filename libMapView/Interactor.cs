@@ -32,11 +32,12 @@ using Akichko.libGis;
 
 namespace Akichko.libMapView
 {
-    public class Interactor : IInputBoundary
+    public class Interactor //: IInputBoundary
     {
         protected CmnMapMgr mapMgr;
         protected ViewParam viewParam;
         protected Presenter presenter;
+        //protected IOutputBoundary presenter;
 
         //動作設定
         protected InteractorSettings settings;
@@ -73,10 +74,10 @@ namespace Akichko.libMapView
             this.mapMgr = mapMgr;
             presenter.SetDrawInterface(drawApi);
 
-            //RefreshMapCache();
             status.drawEnable = true;
             status.isReloadNeeded = true;
-            RefreshDrawArea();
+
+            _ = RefreshMapCacheAsync();
         }
 
 
@@ -101,7 +102,7 @@ namespace Akichko.libMapView
         /* 描画 ***********************************************/
 
 
-        public int MakeImage(IInputBoundary preInteractor = null)
+        public int MakeImage(Interactor preInteractor = null)
         {
             if (!status.drawEnable || !status.isPaintNeeded)
                 return -1;
@@ -126,7 +127,7 @@ namespace Akichko.libMapView
 
         public void UpdateImage() => presenter.UpdateImage();
 
-        public void Paint(IInputBoundary preInteractor = null)
+        public void Paint(Interactor preInteractor = null)
         {
             int ret = MakeImage(preInteractor);
             if(ret == 0)
@@ -242,7 +243,6 @@ namespace Akichko.libMapView
                 var tasks = tileIdList.Select(x => mapMgr.LoadTileAsync(x, null)).ToArray();
 
                 //スレッドセーフ懸念 ＆ 描画イベント不足
-                //Task.WaitAll(tasks);
                 try
                 {
                     await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -271,8 +271,9 @@ namespace Akichko.libMapView
             int exeTime = Environment.TickCount - timeS;
             presenter.PrintLog(0, $"Reload:{exeTime}");
 
-            RefreshDrawArea();
             semaphoReloading.Release();
+
+            RefreshDrawArea();
 
             return 0;
         }
@@ -290,6 +291,8 @@ namespace Akichko.libMapView
             {
                 status.currentTileId = newTileId;
                 status.isReloadNeeded = true;
+
+                _ = RefreshMapCacheAsync();
             }
         }
 
@@ -537,50 +540,50 @@ namespace Akichko.libMapView
 
     }
 
-    public interface IInputBoundary
-    {
-        InteractorStatus Status { get; set; }
+    //public interface IInputBoundary
+    //{
+    //    InteractorStatus Status { get; set; }
 
-        //開始・終了
-        void SetMapMgr(CmnMapMgr mapMgr, CmnDrawApi drawApi);
-        void Shutdown();
+    //    //開始・終了
+    //    void SetMapMgr(CmnMapMgr mapMgr, CmnDrawApi drawApi);
+    //    void Shutdown();
 
-        //ビュー設定
-        void SetViewCenter(LatLon latlon);
-        void SetViewCenter(uint tileId);
-        void SetSettings(InteractorSettings settings);
-        void SetViewParam(ViewParam viewParam);
+    //    //ビュー設定
+    //    void SetViewCenter(LatLon latlon);
+    //    void SetViewCenter(uint tileId);
+    //    void SetSettings(InteractorSettings settings);
+    //    void SetViewParam(ViewParam viewParam);
 
-        //描画設定
-        void ClearStatus();
-        void SetBoundaryGeometry(List<LatLon[]> boundaryList);
-        void SetRouteGeometry(LatLon[] routeGeometry);
-        void SetAttrSelectedObj(CmnObjHandle attrObjHdl);
-        //void SetAttrSelectedLatLon(LatLon latlon);
+    //    //描画設定
+    //    void ClearStatus();
+    //    void SetBoundaryGeometry(List<LatLon[]> boundaryList);
+    //    void SetRouteGeometry(LatLon[] routeGeometry);
+    //    void SetAttrSelectedObj(CmnObjHandle attrObjHdl);
+    //    //void SetAttrSelectedLatLon(LatLon latlon);
 
-        void SetDrawPoint(PointType pointType, LatLon latlon);
+    //    void SetDrawPoint(PointType pointType, LatLon latlon);
 
-        //描画
-        Task<int> RefreshMapCacheAsync();
-        void Paint(IInputBoundary preInteractor = null);
-        int MakeImage(IInputBoundary preInteractor = null);
-        void UpdateImage();
-        void RefreshDrawArea();
+    //    //描画
+    //    Task<int> RefreshMapCacheAsync();
+    //    void Paint(IInputBoundary preInteractor = null);
+    //    int MakeImage(IInputBoundary preInteractor = null);
+    //    void UpdateImage();
+    //    void RefreshDrawArea();
 
-        //検索
-        CmnObjHandle SearchObject(LatLon baseLatLon);
-        CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
-        CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex);
-        CmnObjHandle SearchObject(CmnSearchKey key);
-        CmnObjHandle SearchAttrObject(CmnSearchKey key);
-        CmnObjHandle SearchRandomObject(uint objType);
+    //    //検索
+    //    CmnObjHandle SearchObject(LatLon baseLatLon);
+    //    CmnObjHandle SearchObject(uint tileId, uint objType, ulong objId);
+    //    CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex);
+    //    CmnObjHandle SearchObject(CmnSearchKey key);
+    //    CmnObjHandle SearchAttrObject(CmnSearchKey key);
+    //    CmnObjHandle SearchRandomObject(uint objType);
 
-        //ルート計算
-        void SetRouteMgr(CmnRouteMgr routeMgr);
-        RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
-        RouteResult CalcRoute(LatLon orgLatLon);
+    //    //ルート計算
+    //    void SetRouteMgr(CmnRouteMgr routeMgr);
+    //    RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon);
+    //    RouteResult CalcRoute(LatLon orgLatLon);
 
-    }
+    //}
 
     public interface IOutputBoundary
     {
@@ -624,8 +627,8 @@ namespace Akichko.libMapView
         //読み込み
         public int tileLoadDistanceX = 3;
         public int tileLoadDistanceY = 2;
-        public int tileReleaseDistanceX = 15;
-        public int tileReleaseDistanceY = 10;
+        public int tileReleaseDistanceX = 12;
+        public int tileReleaseDistanceY = 8;
         public bool isAllTileReadMode = false;
 
         //検索

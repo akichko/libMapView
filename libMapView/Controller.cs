@@ -41,12 +41,12 @@ namespace Akichko.libMapView
 
         /* 初期設定 **********************************************************/
 
-        public Controller(Interactor interactor)
+        public Controller(Interactor interactor, ViewParam viewParam = null)
         {
             this.interactor = interactor;
             interactorPtr = interactor;
-            //this.interactor = new Interactor(new Presenter(outputClass));
-            viewParam = new ViewParam(35.4629, 139.62657, 1.0);
+
+            this.viewParam = viewParam ?? new ViewParam(35.4629, 139.62657, 1.0);
             interactor.SetViewParam(viewParam);
             //this.interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
             //this.interactor.SetViewSettings(settings);
@@ -133,7 +133,6 @@ namespace Akichko.libMapView
         public void ChangeZoom(int delta, int x, int y)
         {
             double zoom = delta > 0 ? 2 : 0.5;
-            //ChangeZoom2(zoom, x, y);
 
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
 
@@ -158,56 +157,17 @@ namespace Akichko.libMapView
             interactorPtr.SetDrawPoint(pointType, latlon);
         }
 
-        //private void ChangeZoom2(double zoom, int x, int y)
-        //{
-
-        //    LatLon clickedLatLon = viewParam.GetLatLon(x, y);
-
-        //    viewParam.Zoom *= zoom;
-
-        //    LatLon afterLatLon = viewParam.GetLatLon(x, y);
-
-        //    //マウス位置保持のための移動
-        //    LatLon relLatLon = new LatLon(clickedLatLon.lat - afterLatLon.lat, clickedLatLon.lon - afterLatLon.lon);
-
-        //    interactorPtr.SetViewParam(viewParam);
-        //    MoveViewCenter(relLatLon);
-
-        //    //presenter.UpdateCenterLatLon(viewParam.viewCenter);
-
-        //}
-
-        //public void ChangeSetting(ControlMenu menu)
-        //{
-
-        //}
-
-        //public enum ControlMenu
-        //{
-        //    DispOneWayON,
-        //    DispOneWayOFF,
-        //    DispTileBorderON,
-        //    DispTileBorderOFF,
-        //    BiggerDispArea,
-        //    SmallerDispArea
-        //}
-
 
         /* 描画 **************************************************************/
 
-        public async void Paint()
+        public void Paint()
         {
-            var task = interactor.RefreshMapCacheAsync();
-            var taskBg = interactorBg?.RefreshMapCacheAsync() ?? Task.FromResult(0);
-
-            //同期　⇒しないとスレッドセーフ懸念
-            //task.Wait();
 
             if (interactorBg == null)
             {
                 interactor.Paint();
             }
-            else
+            else // bg有
             {
                 if (!interactor.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
                     return;
@@ -216,20 +176,18 @@ namespace Akichko.libMapView
                 interactorBg.Status.isPaintNeeded = true;
 
                 interactorBg.MakeImage();
-                interactor.MakeImage(interactorBg);
 
-                interactor.UpdateImage();
+                if (interactor.status.drawEnable)
+                {
+                    interactor.MakeImage(interactorBg);
+                    interactor.UpdateImage();
+                }
+                else
+                {
+                    interactorBg.UpdateImage();
+                }
             }
 
-            try
-            {
-                await task.ConfigureAwait(false);
-                await taskBg.ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException(e.Message, e.InnerException);
-            }
         }
 
         public void RefreshDrawArea()
@@ -238,11 +196,6 @@ namespace Akichko.libMapView
             interactorBg?.RefreshDrawArea();
         }
 
-        //public void SetSelectedLatLon(LatLon latlon)
-        //{
-        //    //interactorPtr.SetAttrSelectedLatLon(latlon);
-        //    interactorPtr.SetDrawPoint(PointType.Selected, latlon);
-        //}
 
         public void SetRouteGeometry(LatLon[] routeGeometry)
         {
@@ -400,9 +353,4 @@ namespace Akichko.libMapView
         }
     }
 
-
-    //public class TypeListCtl
-    //{
-    //    Dictionary<string, uint> objTypeDic;
-    //}
 }

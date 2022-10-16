@@ -36,15 +36,16 @@ namespace Akichko.libMapView
     {
         protected IViewApi viewAccess;
         protected CmnDrawApi drawApi;
-        // protected ViewParam viewParam;
+        protected int layerId;
 
         public LatLon[] routeGeometry = null; //削除予定
         public List<LatLon[]> boundaryList = null; //削除予定
 
 
-        public Presenter(IViewApi mainForm)
+        public Presenter(IViewApi mainForm, int layerId = 0)
         {
             viewAccess = (IViewApi)mainForm;
+            this.layerId = layerId;
         }
 
         public void SetDrawInterface(CmnDrawApi drawApi)
@@ -186,7 +187,7 @@ namespace Akichko.libMapView
         //描画結果反映
         public void UpdateImage()
         {
-            viewAccess?.UpdateImage(drawApi.GetDrawAreaBitMap());
+            viewAccess?.UpdateImage(drawApi.GetDrawAreaBitMap(), layerId);
         }
 
 
@@ -294,7 +295,7 @@ namespace Akichko.libMapView
     public interface IViewApi
     {
         //描画エリア
-        void UpdateImage(Image newImage);
+        void UpdateImage(Image newImage, int layerId = 0);
         void RefreshDrawArea();
 
         //選択オブジェクト属性
