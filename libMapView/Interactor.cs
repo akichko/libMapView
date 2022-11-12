@@ -42,9 +42,10 @@ namespace Akichko.libMapView
         //動作設定
         protected InteractorSettings settings;
 
-        protected CmnRouteMgr routeMgr;
+        //protected CmnRouteMgr routeMgr;
 
         protected Dictionary<PointType, LatLon> drawPointDic;
+        protected Dictionary<LineType, LatLon[]> drawLineDic;
 
         SemaphoreSlim semaphoReloading = new SemaphoreSlim(1, 1);
 
@@ -57,6 +58,10 @@ namespace Akichko.libMapView
             set { status = value; }
         }
 
+        public InteractorSettings GetSettings() => settings;
+
+        public CmnMapMgr GetMapMgr() => mapMgr;
+
         /* 起動・設定・終了 ***********************************************/
 
         public Interactor(Presenter presenter, InteractorSettings settings)
@@ -66,6 +71,7 @@ namespace Akichko.libMapView
             this.status = new InteractorStatus();
 
             drawPointDic = new Dictionary<PointType, LatLon>();
+            drawLineDic = new Dictionary<LineType, LatLon[]>();
         }
 
 
@@ -81,11 +87,11 @@ namespace Akichko.libMapView
         }
 
 
-        public void SetRouteMgr(CmnRouteMgr routeMgr)
-        {
-            this.routeMgr = routeMgr;
-            //this.routeMgr.SetMapMgr(mapMgr);
-        }
+        //public void SetRouteMgr(CmnRouteMgr routeMgr)
+        //{
+        //    this.routeMgr = routeMgr;
+        //    //this.routeMgr.SetMapMgr(mapMgr);
+        //}
 
         public void Shutdown()
         {
@@ -168,11 +174,11 @@ namespace Akichko.libMapView
             if (settings.isTileBorderDisp)
                 presenter.DrawTileBorder(tileList, viewParam);
 
+            //ライン追加描画（ルート形状等）
+            drawLineDic.ForEach(x => presenter.DrawLine(x.Value, viewParam, x.Key));
+
             //座標点追加描画
             drawPointDic.ForEach(x => presenter.DrawPoint(x.Value, viewParam, x.Key));
-
-            //ルート形状描画
-            presenter.DrawRouteGeometry(status.routeGeometry, viewParam);
 
             //中心十字描画
             if (settings.isCenterMarkDisp)
@@ -298,21 +304,25 @@ namespace Akichko.libMapView
 
         /* 検索 ***********************************************/
 
+        public void ShowAttribute(CmnObjHandle objHdl) => presenter.ShowAttribute(objHdl);
 
+        public void SetSelectedObjHdl(CmnObjHandle objHdl) => presenter.SetSelectedObjHdl(objHdl);
+   
+        //MapSearchに移動
         public CmnObjHandle SearchObject(LatLon baseLatLon)
         {
             if (!status.drawEnable)
                 return null;
 
             //最近傍オブジェクト取得
-            status.selectedHdl = mapMgr.SearchObj(baseLatLon, settings.drawMapObjFilter, settings.ClickSearchRange, settings.timeStamp);
+            status.selectedHdl = mapMgr.SearchObj(baseLatLon, settings.ClickSearchRange, settings.drawMapObjFilter, null, settings.timeStamp);
             if (status.selectedHdl == null)
                 return null;
 
             //最近傍座標計算
             PolyLinePos nearestPos = LatLon.CalcNearestPoint(baseLatLon, status.selectedHdl?.Geometry);
 
-            presenter.SetSelectedObjHdl(status.selectedHdl, nearestPos);
+            presenter.SetSelectedObjHdl(status.selectedHdl);
 
             //選択オブジェクト属性表示
             presenter.ShowAttribute(status.selectedHdl);
@@ -368,7 +378,7 @@ namespace Akichko.libMapView
             return status.selectedHdl;
         }
 
-        void SearchRelatedObject(CmnObjHandle selectedHdl)
+        public void SearchRelatedObject(CmnObjHandle selectedHdl)
         {
             List<CmnObjHdlRef> relatedHdlList = mapMgr.SearchRefObject(selectedHdl)?.Where(x => x.objHdl != null).ToList();
             presenter.SetRelatedObj(relatedHdlList);
@@ -398,23 +408,6 @@ namespace Akichko.libMapView
 
         /* 情報保持 ***********************************************/
 
-        public void SetAttrSelectedLatLon(LatLon latlon)
-        {
-            SetDrawPoint(PointType.AttrSelected, latlon);
-            status.isPaintNeeded = true;
-        }
-
-        public void SetNearestObj(PolyLinePos nearestPos)
-        {
-            SetDrawPoint(PointType.Nearest, nearestPos.latLon);
-            status.isPaintNeeded = true;
-        }
-
-        public void SetRouteGeometry(LatLon[] routeGeometry)
-        {
-            this.status.routeGeometry = routeGeometry;
-            //presenter.SetRouteGeometry(routeGeometry);
-        }
 
         public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
         {
@@ -432,6 +425,7 @@ namespace Akichko.libMapView
         {
             status.Clear();
             drawPointDic.Clear();
+            drawLineDic.Clear();
             presenter.SetSelectedObjHdl(null);
             presenter.SetRelatedObj(null);
             RefreshDrawArea();
@@ -451,16 +445,27 @@ namespace Akichko.libMapView
 
             if(pointType == PointType.Clicked)
             {
-                presenter.UpdateClickedLatLon(latlon);
+                presenter.UpdateLatLon(PointType.Clicked, latlon);
             }
 
             status.isPaintNeeded = true;
         }
 
-        //public void SetRouteObjList(List<CmnDirObjHandle> routeObjList)
-        //{
-        //    presenter.SetRouteObjList(routeObjList);
-        //}
+        public void SetDrawLine(LineType lineType, LatLon[] geometry)
+        {
+            if (geometry != null)
+            {
+                drawLineDic[lineType] = geometry;
+            }
+            else //null -> clear
+            {
+                if (drawLineDic.ContainsKey(lineType))
+                    drawLineDic.Remove(lineType);
+            }
+
+            status.isPaintNeeded = true;
+        }
+
 
 
 
@@ -494,44 +499,52 @@ namespace Akichko.libMapView
         //public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon) =>
         //    routeMgr.CalcRoute(orgLatLon, dstLatLon);
 
-        public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
-       {
-            ////計算
-            RouteResult routeCalcResult = routeMgr.CalcRoute(orgLatLon, dstLatLon);
+        public void OutputRoute(List<CmnObjHandle> route, LatLon[] routeGeometry) =>
+            presenter.OutputRoute(route, routeGeometry);
 
-            if (routeCalcResult.resultCode != ResultCode.Success)
-            {
-                SetRouteGeometry(null);
-                return routeCalcResult;
-            }
+       // public virtual RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+       //{
+       //     ////計算
+       //     RouteResult routeCalcResult = routeMgr.CalcRoute(orgLatLon, dstLatLon);
 
-            status.route = routeCalcResult.route.Select(x => x.DLinkHdl);
-            presenter.OutputRoute(status.route);
+       //     if (routeCalcResult.resultCode != ResultCode.Success)
+       //     {
+       //         SetDrawLine(LineType.RouteGeometry, null);
 
-            SetRouteGeometry(routeMgr.GetResult());
+       //         return routeCalcResult;
+       //     }
 
-            return routeCalcResult;
-        }
+       //     status.route = routeCalcResult.route.Select(x => x.DLinkHdl);
+       //     LatLon[] routeGeometry = routeMgr.GetResult();
+       //     presenter.OutputRoute(status.route, routeGeometry);
 
-        //自律走行経路
-        public virtual RouteResult CalcRoute(LatLon orgLatLon)
-        {
-            //計算
-            RouteResult routeCalcResult = routeMgr.CalcAutoRoute(orgLatLon);
+       //     SetDrawLine(LineType.RouteGeometry, routeGeometry);
 
-            if (routeCalcResult.resultCode != ResultCode.Success)
-            {
-                SetRouteGeometry(null);
-                return routeCalcResult;
-            }
+       //     return routeCalcResult;
+       // }
 
-            //status.route = routeCalcResult.links.Select(x => x.DLinkHdl);
-            presenter.OutputRoute(routeCalcResult.links);
+       // //自律走行経路
+       // public virtual RouteResult CalcRoute(LatLon orgLatLon)
+       // {
+       //     //計算
+       //     RouteResult routeCalcResult = routeMgr.CalcAutoRoute(orgLatLon);
 
-            SetRouteGeometry(routeMgr.GetRouteGeometry(routeCalcResult.links));
+       //     if (routeCalcResult.resultCode != ResultCode.Success)
+       //     {
+       //         SetDrawLine(LineType.RouteGeometry, null);
 
-            return routeCalcResult;
-        }
+       //         return routeCalcResult;
+       //     }
+
+       //     //status.route = routeCalcResult.links.Select(x => x.DLinkHdl);
+
+       //     LatLon[] routeGeometry = routeMgr.GetRouteGeometry(routeCalcResult.links);
+       //     presenter.OutputRoute(routeCalcResult.links, routeGeometry);
+
+       //     SetDrawLine(LineType.RouteGeometry, routeGeometry);
+
+       //     return routeCalcResult;
+       // }
 
 
         public void ShowAttribute()
@@ -557,7 +570,6 @@ namespace Akichko.libMapView
     //    //描画設定
     //    void ClearStatus();
     //    void SetBoundaryGeometry(List<LatLon[]> boundaryList);
-    //    void SetRouteGeometry(LatLon[] routeGeometry);
     //    void SetAttrSelectedObj(CmnObjHandle attrObjHdl);
     //    //void SetAttrSelectedLatLon(LatLon latlon);
 
@@ -605,17 +617,15 @@ namespace Akichko.libMapView
         void RefreshDrawArea();
 
         //属性
-        void UpdateCenterLatLon(LatLon latlon);
+
+        public void UpdateLatLon(PointType pointType, LatLon latlon);
         void UpdateCenterTileId(uint tileId);
         void ShowAttribute(CmnObjHandle objHdl);
-        void SetSelectedObjHdl(CmnObjHandle objHdl, PolyLinePos nearestPos = null);
+        void SetSelectedObjHdl(CmnObjHandle objHdl);
         void SetSelectedAttr(CmnObjHandle selectedAttr);
         void SetRelatedObj(List<CmnObjHdlRef> relatedHdlList);
-        void UpdateClickedLatLon(LatLon clickedLatLon);
         void SetBoundaryList(List<LatLon[]> boundaryList);
-        //void SetRouteGeometry(LatLon[] routeGeometry);
-        void OutputRoute(IEnumerable<CmnObjHandle> route);
-        //void SetSelectedLatLon(LatLon latlon);
+        void OutputRoute(IEnumerable<CmnObjHandle> route, LatLon[] routeGeometry);
 
         //ログ
         void PrintLog(int logType, string logStr);
@@ -682,13 +692,13 @@ namespace Akichko.libMapView
         //保存パラメータ
         public CmnObjHandle selectedHdl = null;
         public IEnumerable<CmnObjHandle> route = null;
-        public LatLon[] routeGeometry = null;
+        //public LatLon[] routeGeometry = null;
 
         public void Clear()
         {
             selectedHdl = null;
             route = null;
-            routeGeometry = null;
+            //routeGeometry = null;
         }
     }
 
@@ -700,6 +710,15 @@ namespace Akichko.libMapView
         Origin,
         Destination,
         Location,
+        DistanceBase,
+        ViewCenter,
+        Other
+    }
+
+    public enum LineType
+    {
+        RouteGeometry,
+        Distance,
         Other
     }
 
