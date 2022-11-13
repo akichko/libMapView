@@ -104,29 +104,6 @@ namespace Akichko.libMapView
 
         /* 描画 ***********************************************/
 
-        //public int PaintAppend(IOutputBoundary prePresenter = null)
-        //{
-        //    if (!status.drawEnable || !status.isPaintNeeded)
-        //        return -1;
-        //    status.isPaintNeeded = false;
-
-        //    int timeS = Environment.TickCount;
-
-        //    //描画対象タイルを特定
-        //    List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
-
-        //    //描画
-        //    presenter.InitializeGraphics(settings, viewParam, prePresenter);
-        //    DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
-
-        //    UpdateImage();
-
-        //    int exeTime = Environment.TickCount - timeS;
-        //    presenter.PrintLog(1, $"Paint:{exeTime}");
-
-        //    return 0;
-        //}
-
         public int MakeImage(IInputBoundary preInteractor = null)
         {
             if (!status.drawEnable || !status.isPaintNeeded)
