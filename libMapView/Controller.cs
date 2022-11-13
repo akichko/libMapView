@@ -34,39 +34,49 @@ namespace Akichko.libMapView
 {
     public class Controller
     {
-        protected IInputBoundary interactorFg;
-        protected IInputBoundary interactorBg;
-        protected IInputBoundary interactorPtr;
+        protected Interactor interactorFg;
+        protected Interactor interactorBg;
+        protected Interactor interactorPtr;
         ViewParam viewParam;
+
+        public MapSearch searchApi;
 
         /* 初期設定 **********************************************************/
 
-        public Controller(IInputBoundary interactor)
+        public Controller(Interactor interactor, ViewParam viewParam = null)
         {
             this.interactorFg = interactor;
-            interactorPtr = interactor;
-            //this.interactor = new Interactor(new Presenter(outputClass));
-            viewParam = new ViewParam(35.4629, 139.62657, 1.0);
+            interactorPtr = interactorFg;
+
+            this.viewParam = viewParam ?? new ViewParam(35.4629, 139.62657, 1.0);
             interactorFg.SetViewParam(viewParam);
             //this.interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
             //this.interactor.SetViewSettings(settings);
 
         }
 
-        public void OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
+        public int OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactorFg.OpenFile(fileName, mapMgr, drawApi);
+            int ret = mapMgr.Connect(fileName);
+            if (ret != 0)
+                return ret;
+            interactorFg.SetMapMgr(mapMgr, drawApi);
+            return ret;
         }
 
-        public void SetInteractorBg(IInputBoundary interactorBg)
+        public void SetInteractorBg(Interactor interactorBg)
         {
             this.interactorBg = interactorBg;
             interactorBg.SetViewParam(viewParam);
         }
 
-        public void OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
+        public int OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
         {
-            interactorBg.OpenFile(fileName, mapMgr, drawApi);
+            int ret = mapMgr.Connect(fileName);
+            if (ret != 0)
+                return ret;
+            interactorBg.SetMapMgr(mapMgr, drawApi);
+            return ret;
         }
 
         public void ChangeInteractor(bool front)
@@ -149,55 +159,41 @@ namespace Akichko.libMapView
             interactorPtr.SetDrawPoint(pointType, latlon);
         }
 
-
-        //public enum ControlMenu
-        //{
-        //    DispOneWayON,
-        //    DispOneWayOFF,
-        //    DispTileBorderON,
-        //    DispTileBorderOFF,
-        //    BiggerDispArea,
-        //    SmallerDispArea
-        //}
-
+        public void SetDrawLine(LineType lineType, LatLon[] geometry)
+        {
+            interactorPtr.SetDrawLine(lineType, geometry);
+        }
 
         /* 描画 **************************************************************/
 
-        public async void Paint()
+        public void Paint()
         {
-            var task = interactorFg.RefreshMapCacheAsync();
-            var taskBg = interactorBg?.RefreshMapCacheAsync() ?? Task.FromResult(0);
-
-            //同期　⇒しないとスレッドセーフ懸念
-            //task.Wait();
 
             if (interactorBg == null)
             {
                 interactorFg.Paint();
             }
-            else
+            else // bg有
             {
                 if (!interactorFg.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
                     return;
 
-                interactorFg.Status.isPaintNeeded = false;
-                interactorBg.Status.isPaintNeeded = false;
+                interactorFg.Status.isPaintNeeded = true;
+                interactorBg.Status.isPaintNeeded = true;
 
                 interactorBg.MakeImage();
-                interactorFg.MakeImage(interactorBg);
 
-                interactorFg.UpdateImage();
+                if (interactorFg.status.drawEnable)
+                {
+                    interactorFg.MakeImage(interactorBg);
+                    interactorFg.UpdateImage();
+                }
+                else
+                {
+                    interactorBg.UpdateImage();
+                }
             }
 
-            try
-            {
-                await task.ConfigureAwait(false);
-                await taskBg.ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException(e.Message, e.InnerException);
-            }
         }
 
         public void RefreshDrawArea()
@@ -206,15 +202,7 @@ namespace Akichko.libMapView
             interactorBg?.RefreshDrawArea();
         }
 
-        public void SetSelectedLatLon(LatLon latlon)
-        {
-            interactorPtr.SetAttrSelectedLatLon(latlon);
-        }
 
-        public void SetRouteGeometry(LatLon[] routeGeometry)
-        {
-            interactorPtr.SetRouteGeometry(routeGeometry);
-        }
 
         public void SetBoundaryGeometry(List<LatLon[]> boundaryList)
         {
@@ -228,18 +216,26 @@ namespace Akichko.libMapView
 
         //選択
 
-        public void LeftClick(int x, int y)
+        public LatLon LeftClick(int x, int y)
         {
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
-            CmnObjHandle nearestObj = interactorPtr.SearchObject(clickedLatLon);
+
+            MapSearch searchApi = new MapSearch(interactorPtr);
+
+            CmnObjHandle nearestObj = searchApi.SearchObject(clickedLatLon)?.objHandle;
+           
+            //interactorPtr.SearchObject(clickedLatLon);
 
             //PolyLinePos nearestPos = LatLon.CalcNearestPoint(clickedLatLon, nearestObj?.Geometry);
 
-            interactorPtr.SetClickedLatLon(clickedLatLon);
-            //interactor.SetNearestObj(nearestPos);
+            interactorPtr.SetDrawPoint(PointType.Clicked, clickedLatLon);
+            interactorPtr.SetDrawPoint(PointType.AttrSelected, null);
             RefreshDrawArea();
+
+            return clickedLatLon;
         }
 
+        public LatLon GetLatLon(int x, int y) => viewParam.GetLatLon(x, y);
 
         //属性表示
 
@@ -312,19 +308,57 @@ namespace Akichko.libMapView
 
         /* その他 **************************************************************/
 
-        public void SetRouteMgr(CmnRouteMgr routeMgr)
+        //public void SetRouteMgr(CmnRouteMgr routeMgr)
+        //{
+        //    interactorPtr.SetRouteMgr(routeMgr);
+        //}
+
+        public RouteResult CalcRoute(CmnRouteMgr routeMgr, LatLon orgLatLon, LatLon dstLatLon)
         {
-            interactorPtr.SetRouteMgr(routeMgr);
+
+            ////計算
+            RouteResult routeCalcResult = routeMgr.CalcRoute(orgLatLon, dstLatLon);
+
+            if (routeCalcResult.resultCode != ResultCode.Success)
+            {
+                SetDrawLine(LineType.RouteGeometry, null);
+
+                return routeCalcResult;
+            }
+
+            List<CmnObjHandle> route = routeCalcResult.route.Select(x => x.DLinkHdl).ToList();
+            LatLon[] routeGeometry = routeMgr.GetResult();
+
+            interactorPtr.OutputRoute(route, routeGeometry);
+
+            SetDrawLine(LineType.RouteGeometry, routeGeometry);
+
+            return routeCalcResult;
+            // return interactorPtr.CalcRoute(orgLatLon, dstLatLon);
         }
 
-        public RouteResult CalcRoute(LatLon orgLatLon, LatLon dstLatLon)
+        public RouteResult CalcRoute(CmnRouteMgr routeMgr, LatLon orgLatLon)
         {
-            return interactorPtr.CalcRoute(orgLatLon, dstLatLon);
-        }
+            //計算
+            RouteResult routeCalcResult = routeMgr.CalcAutoRoute(orgLatLon);
 
-        public RouteResult CalcRoute(LatLon orgLatLon)
-        {
-            return interactorPtr.CalcRoute(orgLatLon);
+            if (routeCalcResult.resultCode != ResultCode.Success)
+            {
+                SetDrawLine(LineType.RouteGeometry, null);
+
+                return routeCalcResult;
+            }
+
+            //status.route = routeCalcResult.links.Select(x => x.DLinkHdl);
+
+            LatLon[] routeGeometry = routeMgr.GetRouteGeometry(routeCalcResult.links);
+            interactorPtr.OutputRoute(routeCalcResult.links, routeGeometry);
+
+            SetDrawLine(LineType.RouteGeometry, routeGeometry);
+
+            return routeCalcResult;
+            
+            //return interactorPtr.CalcRoute(orgLatLon);
         }
 
         public void ReadBackground(StreamReader sr)
