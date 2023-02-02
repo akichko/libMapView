@@ -240,6 +240,11 @@ namespace Akichko.libMapView
             drawApi.refObjList = refObjList;
         }
 
+        public void SetRelatedId(List<CmnObjIdRef> refIdList)
+        {
+            drawApi.refIdList = refIdList;
+        }
+
         /* ステータスバー用 ***************************************************************/
 
         public void UpdateCenterLatLon(LatLon latlon)
@@ -346,6 +351,7 @@ namespace Akichko.libMapView
         public CmnObjHandle selectObjHdl = null;
         public CmnObjHandle selectAttr = null;
         public List<CmnObjHdlRef> refObjList = null;
+        public List<CmnObjIdRef> refIdList = null;
 
         public InteractorSettings settings;
 
@@ -417,6 +423,11 @@ namespace Akichko.libMapView
             List<int> refObjTypeList = refObjList?.Where(x => x.objHdl.IsEqualTo(objHdl)).Select(x => x.objRefType).ToList();
             if (refObjTypeList != null && refObjTypeList.Count > 0)
                 return new ObjDrawParam(ObjDrawStatus.Reffered, refObjTypeList);
+
+            //関連IDオブジェクト
+            List<int> idRefObjTypeList = refIdList?.Where(x => x.IsEqualTo(objHdl)).Select(x => x.objRefType).ToList();
+            if (idRefObjTypeList != null && idRefObjTypeList.Count > 0)
+                return new ObjDrawParam(ObjDrawStatus.Reffered, idRefObjTypeList);
 
             //その他
             return new ObjDrawParam(ObjDrawStatus.Normal);

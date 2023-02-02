@@ -195,6 +195,13 @@ namespace Akichko.libMapView
         {
             TileXYL xyl = mapMgr.tileApi.CalcTileXYL(tileId);
 
+            //暫定
+            if (xylNW.x > xylSE.x)
+                return true;
+
+            if (xylNW.y < xylSE.y)
+                return true;
+
             if (xyl.x < xylNW.x - range || xyl.x > xylSE.x + range || xyl.y < xylSE.y - range || xyl.y > xylNW.y + range)
                 return false;
             else
