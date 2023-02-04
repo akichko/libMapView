@@ -196,6 +196,8 @@ namespace Akichko.libMapView
 
         }
 
+        public Image GetDrawAreaBitMap() => drawApi.GetDrawAreaBitMap();
+
         //描画結果反映
         public void UpdateImage()
         {

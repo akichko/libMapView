@@ -27,8 +27,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Drawing;
 using Akichko.libGis;
+using System.Drawing;
 
 namespace Akichko.libMapView
 {
@@ -52,11 +52,7 @@ namespace Akichko.libMapView
         //制御用
         public InteractorStatus status;
 
-        public InteractorStatus Status
-        {
-            get { return status; }
-            set { status = value; }
-        }
+        public InteractorStatus Status { get { return status; } set { status = value; } }
 
         public InteractorSettings GetSettings() => settings;
 
@@ -375,19 +371,19 @@ namespace Akichko.libMapView
             return status.selectedHdl;
         }
 
-        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
-        {
-            if (!status.drawEnable)
-                return null;
+        //public CmnObjHandle SearchObject(uint tileId, uint objType, UInt16 objIndex)
+        //{
+        //    if (!status.drawEnable)
+        //        return null;
 
-            status.selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex, settings.timeStamp);
-            presenter.SetSelectedObjHdl(status.selectedHdl);
-            presenter.ShowAttribute(status.selectedHdl);
+        //    status.selectedHdl = mapMgr.SearchObj(tileId, objType, objIndex, settings.timeStamp);
+        //    presenter.SetSelectedObjHdl(status.selectedHdl);
+        //    presenter.ShowAttribute(status.selectedHdl);
 
-            SearchRelatedObject(status.selectedHdl);
+        //    SearchRelatedObject(status.selectedHdl);
 
-            return status.selectedHdl;
-        }
+        //    return status.selectedHdl;
+        //}
 
         public CmnObjHandle SearchObject(CmnSearchKey key)
         {
