@@ -42,7 +42,8 @@ namespace Akichko.libMapView
         //動作設定
         protected InteractorSettings settings;
 
-        //protected CmnRouteMgr routeMgr;
+
+        protected Image imgCache;
 
         protected Dictionary<PointType, LatLon> drawPointDic;
         protected Dictionary<LineType, LatLon[]> drawLineDic;
@@ -53,6 +54,8 @@ namespace Akichko.libMapView
         public InteractorStatus status;
 
         public InteractorStatus Status { get { return status; } set { status = value; } }
+
+        public bool IsPaintNeeded() => status.isPaintNeeded;
 
         public InteractorSettings GetSettings() => settings;
 
@@ -83,16 +86,18 @@ namespace Akichko.libMapView
         }
 
 
-        //public void SetRouteMgr(CmnRouteMgr routeMgr)
-        //{
-        //    this.routeMgr = routeMgr;
-        //    //this.routeMgr.SetMapMgr(mapMgr);
-        //}
-
-        public void Shutdown()
+        public int Disconnect()
         {
-            if (mapMgr != null)
-                mapMgr.Disconnect();
+            if (mapMgr == null)
+                return -1;
+
+            int ret = mapMgr.Disconnect();
+            if (ret < 0)
+                return -1;
+
+            mapMgr = null;
+
+            return 0;
         }
 
         public void SetSettings(InteractorSettings settings)
@@ -104,10 +109,14 @@ namespace Akichko.libMapView
         /* 描画 ***********************************************/
 
 
-        public int MakeImage(Interactor preInteractor = null)
+        public Image MakeImage(Image img = null)
         {
-            if (!status.drawEnable || !status.isPaintNeeded)
-                return -1;
+            if (!status.drawEnable)
+                return null;
+
+            if (!status.isPaintNeeded)
+                return (Image)imgCache.Clone();
+
             status.isPaintNeeded = false;
 
             int timeS = Environment.TickCount;
@@ -116,27 +125,20 @@ namespace Akichko.libMapView
             List<CmnTile> drawAreaTileList = CalcDrawAreaTileList();
 
             //描画
-            presenter.InitializeGraphics(settings, viewParam, ((Interactor)preInteractor)?.presenter);
+            presenter.InitializeGraphics(settings, viewParam, img);
             DrawMap(drawAreaTileList, viewParam, settings.drawMapObjFilter, settings.timeStamp);
 
-            //UpdateImage();
 
             int exeTime = Environment.TickCount - timeS;
             presenter.PrintLog(1, $"Draw:{exeTime}");
 
-            return 0;
+            imgCache?.Dispose();
+            imgCache = presenter.GetDrawAreaBitMap();
+            return (Image)imgCache.Clone();
         }
 
-        public void UpdateImage() => presenter.UpdateImage();
+        public void UpdateImage(Image drawAreaImg = null) => presenter.UpdateImage(drawAreaImg);
 
-        public void Paint(Interactor preInteractor = null)
-        {
-            int ret = MakeImage(preInteractor);
-            if(ret == 0)
-                UpdateImage();
-
-            return;
-        }
 
 
         protected List<CmnTile> CalcDrawAreaTileList()
@@ -181,9 +183,14 @@ namespace Akichko.libMapView
                 presenter.DrawCenterMark(viewParam);
         }
 
-        public void RefreshDrawArea()
+        public void Repaint()
         {
             status.isPaintNeeded = true;
+        }
+
+
+        public void RefreshDrawArea()
+        {
             presenter.RefreshDrawArea();
         }
 
@@ -282,6 +289,7 @@ namespace Akichko.libMapView
 
             semaphoReloading.Release();
 
+            status.isPaintNeeded = true;
             RefreshDrawArea();
 
             return 0;
@@ -469,7 +477,7 @@ namespace Akichko.libMapView
                 presenter.UpdateLatLon(PointType.Clicked, latlon);
             }
 
-            status.isPaintNeeded = true;
+           // status.isPaintNeeded = true;
         }
 
         public void SetDrawLine(LineType lineType, LatLon[] geometry)
@@ -484,7 +492,7 @@ namespace Akichko.libMapView
                     drawLineDic.Remove(lineType);
             }
 
-            status.isPaintNeeded = true;
+            //status.isPaintNeeded = true;
         }
 
 
@@ -621,18 +629,17 @@ namespace Akichko.libMapView
     {
         //設定
         void SetDrawInterface(CmnDrawApi drawApi);
-        //void SetDrawBgInterface(CmnDrawApi drawBgApi);
         void SetViewSettings(InteractorSettings settings);
 
         //地図描画
-        void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, IOutputBoundary presenter = null);
+        void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, Image img = null);
         void DrawBackGround(ViewParam viewParam);
         void DrawTiles(List<CmnTile> tileList, CmnObjFilter filter, ViewParam viewParam, long timeStamp = -1);
         void DrawTileBorder(List<CmnTile> tileList, ViewParam viewParam);
         void DrawPoint(LatLon latlon, ViewParam viewParam, PointType type = PointType.Other);
         void DrawRouteGeometry(LatLon[] routeGeometry, ViewParam viewParam);
         void DrawCenterMark(ViewParam viewParam);
-        void UpdateImage();
+        void UpdateImage(Image drawAreaImg = null);
         //int DrawMapObj(CmnObjHandle cmnObjHandle, ViewParam viewParam);
         void RefreshDrawArea();
 

@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using Akichko.libGis;
 using System.IO;
+using System.Threading;
 
 namespace Akichko.libMapView
 {
@@ -43,6 +44,13 @@ namespace Akichko.libMapView
 
         /* 初期設定 **********************************************************/
 
+        public Controller(ViewParam viewParam = null)
+        {
+            interactorPtr = interactorFg;
+
+            this.viewParam = viewParam ?? new ViewParam(35.4629, 139.62657, 1.0);
+        }
+
         public Controller(Interactor interactor, ViewParam viewParam = null)
         {
             this.interactorFg = interactor;
@@ -50,35 +58,37 @@ namespace Akichko.libMapView
 
             this.viewParam = viewParam ?? new ViewParam(35.4629, 139.62657, 1.0);
             interactorFg.SetViewParam(viewParam);
-            //this.interactor.SetViewCenter(new LatLon(35.4629, 139.62657));
-            //this.interactor.SetViewSettings(settings);
-
         }
 
-        public int OpenFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, bool isForeground = true)
+        public int OpenMap(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi, bool isForeground = true)
         {
             Interactor interactor = isForeground ? interactorFg : interactorBg;
             int ret = mapMgr.Connect(fileName);
-            if (ret != 0)
+            if (ret < 0)
                 return ret;
             interactor.SetMapMgr(mapMgr, drawApi);
             return ret;
         }
-
-        public void SetInteractorBg(Interactor interactorBg)
+        public int CloseMap(bool isForeground = true)
         {
-            this.interactorBg = interactorBg;
-            interactorBg.SetViewParam(viewParam);
+            Interactor interactor = isForeground ? interactorFg : interactorBg;
+
+            int ret = interactor?.Disconnect() ?? -1;
+            return ret;
         }
 
-        //public int OpenBgFile(string fileName, CmnMapMgr mapMgr, CmnDrawApi drawApi)
-        //{
-        //    int ret = mapMgr.Connect(fileName);
-        //    if (ret != 0)
-        //        return ret;
-        //    interactorBg.SetMapMgr(mapMgr, drawApi);
-        //    return ret;
-        //}
+        public void SetInteractor(Interactor interactor, bool isForeground = true)
+        {
+            if (isForeground)
+            {
+                interactorFg = interactor;
+                interactorPtr = interactorFg;
+            }
+            else 
+                interactorBg = interactor;
+
+            interactor.SetViewParam(viewParam);
+        }
 
         public void ChangeInteractor(bool front)
         {
@@ -90,13 +100,15 @@ namespace Akichko.libMapView
 
         public void Shutdown()
         {
-            interactorFg.Shutdown();
-            interactorBg?.Shutdown();
+            interactorFg?.Disconnect();
+            interactorBg?.Disconnect();
         }
+
+        public InteractorSettings GetViewSettings() => interactorPtr?.GetSettings();
 
         public void SetViewSettings(InteractorSettings settings)
         {
-            interactorPtr.SetSettings(settings);
+            interactorPtr?.SetSettings(settings);
             RefreshDrawArea();
         }
 
@@ -107,7 +119,7 @@ namespace Akichko.libMapView
         {
             viewParam.Width = width;
             viewParam.Height = height;
-            interactorPtr.SetViewParam(viewParam);
+            //interactorPtr.SetViewParam(viewParam);
             RefreshDrawArea();
         }
 
@@ -121,15 +133,16 @@ namespace Akichko.libMapView
         public void MoveViewCenter(int x, int y)
         {
             viewParam.MoveViewCenter(x, y);
-            interactorFg.SetViewParam(viewParam);
+            interactorFg?.SetViewParam(viewParam);
             interactorBg?.SetViewParam(viewParam);
+
             RefreshDrawArea();
         }
 
         public void MoveViewCenter(LatLon relLatLon)
         {
             viewParam.MoveViewCenter(relLatLon);
-            interactorFg.SetViewParam(viewParam);
+            interactorFg?.SetViewParam(viewParam);
             interactorBg?.SetViewParam(viewParam);
             RefreshDrawArea();
         }
@@ -147,72 +160,69 @@ namespace Akichko.libMapView
             //マウス位置保持のための移動
             LatLon relLatLon = new LatLon(clickedLatLon.lat - afterLatLon.lat, clickedLatLon.lon - afterLatLon.lon);
 
-            interactorPtr.SetViewParam(viewParam);
+            interactorPtr?.SetViewParam(viewParam);
             MoveViewCenter(relLatLon);
 
-            RefreshDrawArea();
+            //RefreshDrawArea();
 
         }
 
 
         public void SetDrawPoint(PointType pointType, LatLon latlon)
         {
-            interactorPtr.SetDrawPoint(pointType, latlon);
+            interactorPtr?.SetDrawPoint(pointType, latlon);
         }
 
         public void SetDrawLine(LineType lineType, LatLon[] geometry)
         {
-            interactorPtr.SetDrawLine(lineType, geometry);
+            interactorPtr?.SetDrawLine(lineType, geometry);
         }
 
         /* 描画 **************************************************************/
 
         public void Paint()
         {
-            if (!interactorFg.status.drawEnable)
-                return;
+            //if (!interactorFg.status.drawEnable)
+            //    return;
 
+            Image img = null;
 
-            //if (interactorBg != null && interactorBg.Status.isPaintNeeded)
-            //{
-            //    interactorFg.Paint();
-            //    interactorFg.Status.isPaintNeeded = true;
-            //    interactorBg.MakeImage();
-            //}
-
-            //if (interactorFg.Status.isPaintNeeded)
-            //{
-            //    interactorFg.MakeImage(interactorBg);
-            //    interactorFg.UpdateImage();
-
-            //}
-
-
-
-
-            if (interactorBg == null)
+            //BG描画
+            if (interactorBg != null)
             {
-                interactorFg.Paint();
+                if (interactorBg.Status.isPaintNeeded)
+                {
+                    img = interactorBg.MakeImage();
+
+                    if (interactorFg == null)
+                    {
+                        interactorBg.UpdateImage(img);
+                    }
+                    else
+                    {
+                        interactorFg.Status.isPaintNeeded = true;
+                    }
+                }
+                else if (interactorFg != null && interactorFg.Status.isPaintNeeded)
+                {
+                    img = interactorBg.MakeImage();
+                }
             }
-            else // bg有
+
+            //FG描画
+            if (interactorFg != null && interactorFg.Status.isPaintNeeded)
             {
-                if (!interactorFg.Status.isPaintNeeded && !interactorBg.Status.isPaintNeeded)
-                    return;
-
-                interactorFg.Status.isPaintNeeded = true;
-                interactorBg.Status.isPaintNeeded = true;
-
-                interactorBg.MakeImage();
-
-                interactorFg.MakeImage(interactorBg);
+                interactorFg.MakeImage(img);
                 interactorFg.UpdateImage();
             }
-
         }
 
         public void RefreshDrawArea()
         {
-            interactorFg.RefreshDrawArea();
+            interactorFg?.Repaint();
+            interactorBg?.Repaint();
+
+            interactorFg?.RefreshDrawArea();
             interactorBg?.RefreshDrawArea();
         }
 
@@ -225,7 +235,7 @@ namespace Akichko.libMapView
 
         public void ClearParam()
         {
-            interactorFg.ClearStatus();                
+            interactorPtr?.ClearStatus();                
         }
 
         //選択
@@ -233,6 +243,9 @@ namespace Akichko.libMapView
         public LatLon LeftClick(int x, int y)
         {
             LatLon clickedLatLon = viewParam.GetLatLon(x, y);
+
+            if (interactorPtr == null)
+                return clickedLatLon;
 
             MapSearch searchApi = new MapSearch(interactorPtr);
 
@@ -259,7 +272,7 @@ namespace Akichko.libMapView
 
         /* 検索 **************************************************************/
 
-        public void SearchObject(uint tileId, uint objType, UInt64 objId, bool jump = true)
+        public CmnObjHandle SearchObject(uint tileId, uint objType, UInt64 objId, bool jump = true)
         {
             CmnObjHandle searchedObjHdl = interactorPtr.SearchObject(tileId, objType, objId);
             if (searchedObjHdl != null && jump)
@@ -268,24 +281,13 @@ namespace Akichko.libMapView
                 if (latlon != null)
                     interactorPtr.SetViewCenter(latlon);
             }
+            interactorPtr.Repaint();
             interactorPtr.RefreshDrawArea();
 
+            return searchedObjHdl;
         }
 
-        //public void SearchObject(uint tileId, uint objType, UInt16 objIndex, bool jump = true)
-        //{
-        //    CmnObjHandle searchedObjHdl = interactorFg.SearchObject(tileId, objType, objIndex);
-        //    if (searchedObjHdl != null && jump)
-        //    {
-        //        LatLon latlon = searchedObjHdl.GetCenterLatLon();
-        //        if (latlon != null)
-        //            interactorPtr.SetViewCenter(latlon);
-        //    }
-        //    interactorPtr.RefreshDrawArea();
-
-        //}
-
-        public void SearchObject(CmnSearchKey key)
+        public CmnObjHandle SearchObject(CmnSearchKey key)
         {
             CmnObjHandle searchedObjHdl = interactorFg.SearchObject(key);
             if (searchedObjHdl != null)
@@ -296,16 +298,19 @@ namespace Akichko.libMapView
             }
             interactorPtr.RefreshDrawArea();
 
+            return searchedObjHdl;
         }
 
-        public void SearchRandomObject(uint objType)
+        public CmnObjHandle SearchRandomObject(uint objType)
         {
-            CmnObjHandle obj = interactorFg.SearchRandomObject(objType);
+            CmnObjHandle searchedObjHdl = interactorFg.SearchRandomObject(objType);
 
-            LatLon latlon = obj?.GetCenterLatLon();
+            LatLon latlon = searchedObjHdl?.GetCenterLatLon();
 
             if(latlon != null)
                 interactorFg.SetViewCenter(latlon);
+
+            return searchedObjHdl;
         }
 
         public void SearchTile(uint tileId)
@@ -321,11 +326,6 @@ namespace Akichko.libMapView
 
 
         /* その他 **************************************************************/
-
-        //public void SetRouteMgr(CmnRouteMgr routeMgr)
-        //{
-        //    interactorPtr.SetRouteMgr(routeMgr);
-        //}
 
         public RouteResult CalcRoute(CmnRouteMgr routeMgr, LatLon orgLatLon, LatLon dstLatLon)
         {

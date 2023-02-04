@@ -37,10 +37,7 @@ namespace Akichko.libMapView
         protected IViewApi viewAccess;
         protected CmnDrawApi drawApi;
         protected int layerId;
-
-        public LatLon[] routeGeometry = null; //削除予定
         public List<LatLon[]> boundaryList = null; //削除予定
-
 
         public Presenter(IViewApi mainForm, int layerId = 0)
         {
@@ -63,14 +60,10 @@ namespace Akichko.libMapView
         /* 描画 ******************************************************/
 
         //初期化
-        public void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, IOutputBoundary presenter = null)
+        public void InitializeGraphics(InteractorSettings settings, ViewParam viewParam, Image img = null)
         {
-            //this.settings = settings;
             drawApi.settings = settings;
-            drawApi.InitializeGraphics(viewParam, ((Presenter)presenter)?.drawApi);
-            //drawAreaBitmap = viewParam.CreateBitmap();
-            //g = Graphics.FromImage(drawAreaBitmap);
-            //this.viewParam = viewParam;
+            drawApi.InitializeGraphics(viewParam, img);
         }
 
         //タイルリスト
@@ -100,6 +93,7 @@ namespace Akichko.libMapView
                 {
                     drawApi.DrawPolyline(x, pen);
                 });
+                pen.Dispose();
             }
         }
 
@@ -199,9 +193,10 @@ namespace Akichko.libMapView
         public Image GetDrawAreaBitMap() => drawApi.GetDrawAreaBitMap();
 
         //描画結果反映
-        public void UpdateImage()
+        public void UpdateImage(Image drawAreaImg = null)
         {
-            viewAccess?.UpdateImage(drawApi.GetDrawAreaBitMap(), layerId);
+            Image img = drawAreaImg != null ? drawAreaImg : drawApi?.GetDrawAreaBitMap();
+            viewAccess?.UpdateImage(img, layerId);
         }
 
 
@@ -360,20 +355,19 @@ namespace Akichko.libMapView
         /* 描画 ==================================================================================*/
 
         //初期化
-        public void InitializeGraphics(ViewParam viewParam, CmnDrawApi preDrawApi = null)
+        public void InitializeGraphics(ViewParam viewParam, Image img = null)
         {
             this.viewParam = viewParam;
 
-            if (preDrawApi != null)
+            if (img != null)
             {
-                drawAreaBitmap = preDrawApi.drawAreaBitmap;
-                g = preDrawApi.GetGraphics;
+                drawAreaBitmap = img;
+                g = Graphics.FromImage(img);
                 return;
             }
 
             drawAreaBitmap = viewParam.CreateBitmap();
             g = Graphics.FromImage(drawAreaBitmap);
-            //this.viewParam = viewParam;
         }
 
         public Graphics GetGraphics => g;
